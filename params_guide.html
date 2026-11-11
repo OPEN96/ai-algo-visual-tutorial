@@ -1,0 +1,691 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>参数图鉴 · 从感知机到自注意力</title>
+<style>
+:root{
+  --bg:#0f141b; --card:#171e28; --card2:#1d2632; --line:#2b3746;
+  --tx:#e6edf5; --tx2:#a8b8c9; --tx3:#77899d;
+  --pos:#5aa9ff; --neg:#e0a84e; --bound:#f07373; --ok:#4ec9a0;
+  --accentBg:#132a44; --shadow:0 2px 14px rgba(0,0,0,.22);
+}
+body[data-theme="light"]{
+  --bg:#f5f8fc; --card:#ffffff; --card2:#f4f8fd; --line:#dce6f2;
+  --tx:#1a2532; --tx2:#546577; --tx3:#7c8b9c;
+  --pos:#185fa5; --neg:#ba7517; --bound:#a32d2d; --ok:#1d9e75;
+  --accentBg:#e6f1fb; --shadow:0 2px 12px rgba(20,50,90,.08);
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--tx);
+  font:14px/1.75 -apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif}
+.wrap{max-width:1080px;margin:0 auto;padding:26px 22px 70px}
+h1{font-size:25px;font-weight:600;margin:0 0 6px;letter-spacing:.5px}
+h2{font-size:18px;font-weight:600;margin:0 0 4px}
+h3{font-size:14px;font-weight:600;margin:0 0 6px}
+p{margin:0 0 9px}
+code{font-family:ui-monospace,Consolas,"SF Mono",monospace;font-size:12px;
+  background:var(--card2);border:1px solid var(--line);border-radius:4px;padding:1px 5px;color:var(--pos)}
+a{color:var(--pos);text-decoration:none}
+.top{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap}
+.sub{color:var(--tx2);font-size:13px;max-width:760px}
+button{font:inherit;font-size:12px;color:var(--tx);background:var(--card2);border:1px solid var(--line);
+  border-radius:7px;padding:6px 12px;cursor:pointer;transition:.15s}
+button:hover{border-color:var(--pos);color:var(--pos)}
+button.on{background:var(--accentBg);border-color:var(--pos);color:var(--pos)}
+button.primary{background:var(--pos);border-color:var(--pos);color:#08131f;font-weight:600}
+.muted{color:var(--tx3);font-size:12px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;
+  padding:16px 18px;margin-bottom:14px;box-shadow:var(--shadow)}
+.lead{background:var(--accentBg);border-left:3px solid var(--pos);
+  border-radius:0 8px 8px 0;padding:12px 15px;margin:12px 0;font-size:14px;line-height:1.9}
+.lead b,.card b{color:var(--tx);font-weight:600}
+.nav{display:flex;gap:8px;flex-wrap:wrap;margin:16px 0 22px}
+.nav a{font-size:12px;padding:5px 11px;background:var(--card);border:1px solid var(--line);border-radius:20px}
+.nav a:hover{border-color:var(--pos)}
+.sec{margin-top:34px;scroll-margin-top:16px}
+.sec-head{display:flex;align-items:baseline;gap:12px;border-bottom:1px solid var(--line);padding-bottom:9px;margin-bottom:14px}
+.sec-head .tag{font-size:11px;color:var(--pos);font-family:ui-monospace,Consolas,monospace;letter-spacing:1px}
+.sec-head .desc{font-size:12px;color:var(--tx3);margin-left:auto}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media(max-width:820px){.two{grid-template-columns:1fr}}
+.kbox{background:var(--card2);border:1px solid var(--line);border-radius:9px;padding:12px 14px}
+.kbox p{font-size:13px;color:var(--tx2);margin:0}
+.kbox .t{font-size:13px;font-weight:600;margin-bottom:5px;color:var(--pos)}
+.kbox .t.warn{color:var(--neg)}
+.kbox .t.ok{color:var(--ok)}
+table{width:100%;border-collapse:collapse;font-size:12.5px}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{color:var(--tx3);font-weight:500;white-space:nowrap;background:var(--card2)}
+td{color:var(--tx2)}
+td b{color:var(--tx)}
+.scroll{overflow-x:auto}
+.filters{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:14px}
+.filters input{flex:1;min-width:180px;background:var(--card2);border:1px solid var(--line);
+  border-radius:7px;padding:7px 11px;color:var(--tx);font:inherit;font-size:12px;outline:none}
+.filters input:focus{border-color:var(--pos)}
+.pgrid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media(max-width:820px){.pgrid{grid-template-columns:1fr}}
+.pcard{background:var(--card);border:1px solid var(--line);border-radius:11px;padding:14px 16px}
+.pcard .ph{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:9px}
+.pcard .nm{font-size:15px;font-weight:600}
+.badge{font-size:10.5px;padding:2px 8px;border-radius:20px;white-space:nowrap;border:1px solid}
+.b-learn{color:var(--ok);border-color:var(--ok);background:transparent}
+.b-set{color:var(--pos);border-color:var(--pos);background:transparent}
+.b-read{color:var(--tx3);border-color:var(--line);background:transparent}
+.pcard .ln{display:grid;grid-template-columns:62px 1fr;gap:4px 10px;font-size:12.5px;color:var(--tx2);line-height:1.7;margin-bottom:5px}
+.pcard .ln .k{color:var(--tx3);white-space:nowrap}
+.pcard .ln .v b{color:var(--tx)}
+.pcard .warn{font-size:12px;color:var(--neg);background:var(--card2);border-radius:6px;padding:7px 10px;margin-top:8px;line-height:1.7}
+.pcard code{font-size:11.5px}
+.lab{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media(max-width:900px){.lab{grid-template-columns:1fr}}
+.labbox{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:15px 16px}
+.sliderrow{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:10px 0 4px}
+.sliderrow input[type=range]{flex:1;min-width:140px;accent-color:var(--pos)}
+.val{font-family:ui-monospace,Consolas,monospace;color:var(--pos);font-size:14px;min-width:52px;text-align:right}
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px}
+.chips button{padding:3px 9px;font-size:11px}
+.out{background:var(--card2);border:1px solid var(--line);border-radius:8px;padding:10px 12px;
+  font-family:ui-monospace,Consolas,monospace;font-size:12px;color:var(--tx2);line-height:1.85;white-space:pre-wrap;word-break:break-all}
+.out b{color:var(--pos);font-weight:600}
+.bars{margin-top:10px}
+.bar{display:flex;align-items:center;gap:9px;margin-bottom:7px;font-size:12px}
+.bar .bl{width:62px;color:var(--tx3);white-space:nowrap}
+.bar .bt{flex:1;height:18px;background:var(--card2);border-radius:4px;overflow:hidden}
+.bar .bf{height:100%;border-radius:4px;background:var(--pos);transition:width .18s}
+.bar .bv{width:58px;text-align:right;font-family:ui-monospace,Consolas,monospace;color:var(--tx)}
+.note{font-size:12px;color:var(--tx3);line-height:1.8;margin-top:9px}
+.qa p{font-size:13px;color:var(--tx2);line-height:1.85;margin:0 0 10px}
+.qa p:last-child{margin-bottom:0}
+.qa b{color:var(--tx)}
+.foot{margin-top:34px;padding-top:14px;border-top:1px solid var(--line);font-size:12px;color:var(--tx3);line-height:1.9}
+.hl{color:var(--neg)}
+.hl2{color:var(--ok)}
+ol,ul{padding-left:20px;margin:6px 0 10px;color:var(--tx2);font-size:13px}
+li{margin-bottom:5px}
+.empty{color:var(--tx3);font-size:13px;padding:18px;text-align:center}
+</style>
+</head>
+<body data-theme="dark">
+<div class="wrap">
+
+<div class="top">
+  <div>
+    <h1>参数图鉴 · 从感知机到自注意力</h1>
+    <p class="sub">把前两页出现过的旋钮全部拆开讲一遍。全程不需要数学基础：每张卡片都按「是什么 → 干什么 → 常见取值 → 举个例子 → 调大调小会怎样」的顺序写，最后有两个可以亲手拨的实验。</p>
+  </div>
+  <button id="themeBtn">切换浅色</button>
+</div>
+
+<div class="nav">
+  <a href="#s0">0 · 先分清两类参数</a>
+  <a href="#s1">1 · 感知机（入门）</a>
+  <a href="#s1b">1.5 · 哪些不是参数</a>
+  <a href="#s2">2 · 自注意力（进阶）</a>
+  <a href="#s3">3 · 动手实验</a>
+  <a href="#s4">4 · 速查表</a>
+  <a href="#s5">5 · 常见误区</a>
+</div>
+
+<div class="lead">
+<b>一句话总纲：</b>参数就是模型身上「可以拧的旋钮」。但旋钮分两种 —— 一种是<b>模型自己从数据里拧出来的</b>（叫参数 / 权重），另一种是<b>你开工前先拧好、之后不再动的</b>（叫超参数）。训练这件事，本质上只做一件事：不断微调前一类，直到猜对为止。
+</div>
+
+<!-- ============ 0 ============ -->
+<div class="sec" id="s0">
+  <div class="sec-head"><span class="tag">LEVEL 0</span><h2>先分清两类参数</h2><span class="desc">这一步比记任何名词都重要</span></div>
+  <div class="card">
+    <div class="two">
+      <div class="kbox">
+        <div class="t ok">① 学出来的参数（权重 w、偏置 b）</div>
+        <p>像<b>做菜时盐放了多少</b>。一开始随便给个值，尝一口（发现太淡）就加一点，再尝再加，最后定下来。这个最终数值不是人规定的，是「尝」出来的。<br><br>对应到代码：<code>w</code> 从 <code>[0, 0]</code> 变成 <code>[0.1, 0.1]</code>，这一步发生在训练过程里。</p>
+      </div>
+      <div class="kbox">
+        <div class="t">② 人先定好的超参数（学习率、轮数、维度…）</div>
+        <p>像<b>火候档位、最多尝几次</b>。开工前你自己定，训练过程中不再改。它不直接决定答案，但决定了「学得快不快、稳不稳、能学多复杂」。<br><br>对应到代码：<code>lr=0.1</code>、<code>max_epochs=100</code>、<code>DIM=8</code>。</p>
+      </div>
+    </div>
+    <div class="lead" style="margin-bottom:0">
+      还有第三类容易被误当成参数：<b>只读的结果</b>（误差曲线、注意力百分比、输出向量）。它们是模型算完后给你的「体检报告」，<b>只能看，不能拧</b>。本页每张卡片右上角都标了类别，速查表也按这三类分开。
+    </div>
+  </div>
+  <div class="card">
+    <h3>用 3 行代码看懂「训练」到底改了什么</h3>
+    <div class="out">猜一下  →  和答案比一比  →  猜错就把 w 挪一点点
+猜一下  →  和答案比一比  →  猜错就把 w 挪一点点
+…… 直到一整轮都没猜错，停下来</div>
+    <p class="note">这三行里，只有 <code>w</code> 和 <code>b</code> 在变；<code>lr</code>、<code>epochs</code> 自始至终没动过。把这一点记住，后面所有名词都不会混。</p>
+  </div>
+</div>
+
+<!-- ============ 1 ============ -->
+<div class="sec" id="s1">
+  <div class="sec-head"><span class="tag">LEVEL 1</span><h2>感知机：最小的模型，参数也最少</h2><span class="desc">对应 perceptron.py / perceptron_visual.html</span></div>
+  <div class="card">
+    <p style="font-size:13px;color:var(--tx2);margin-bottom:0">它做的判断只有一步：<code>x1×w1 + x2×w2 + b ≥ 0 → 判 1</code>。就这 3 个可学的数（<code>w1</code>、<code>w2</code>、<code>b</code>），加上几个你设定的旋钮，构成了全部内容。先按下面的顺序读，前 5 张读完就能看懂整张图。</p>
+  </div>
+  <div class="filters">
+    <button class="on" data-f="all">全部</button>
+    <button data-f="learn">学出来的参数</button>
+    <button data-f="set">人设定的超参数</button>
+    <button data-f="read">只读的结果</button>
+    <input id="q" placeholder="搜索参数名或关键词，例如：学习率 / 掩码 / 温度">
+  </div>
+  <div id="cards1" class="pgrid"></div>
+</div>
+
+<!-- ============ 1.5 ============ -->
+<div class="sec" id="s1b">
+  <div class="sec-head"><span class="tag">LEVEL 1.5</span><h2>两个页面上那些「看起来像参数」的东西</h2><span class="desc">专门给入门者排雷</span></div>
+  <div class="card">
+    <div class="scroll"><table>
+      <thead><tr><th>你看到的东西</th><th>它其实是什么</th><th>会影响模型吗</th></tr></thead>
+      <tbody>
+        <tr><td><b>OR / AND / XOR 切换</b></td><td>换一套题目（训练数据），不是旋钮</td><td>会。换题就是换任务，XOR 根本学不会</td></tr>
+        <tr><td><b>播放速度 40–600 ms</b></td><td>纯动画速度，单位是毫秒</td><td class="hl2">完全不会。只影响你看得快不快</td></tr>
+        <tr><td><b>单步 / 自动播放 / 跑完 / 重置</b></td><td>播放器按钮</td><td class="hl2">不会改变计算结果，只控制播放进度</td></tr>
+        <tr><td><b>每轮修正次数、累计更新次数</b></td><td>训练日志（体检报告）</td><td class="hl2">只读，不能调</td></tr>
+        <tr><td><b>决策边界 x1 + x2 = 1</b></td><td>训练算出来的<b>结论</b></td><td class="hl2">是结果，不是能设定的参数</td></tr>
+        <tr><td><b>新样本 [0.5, 0.8]</b></td><td>考模型的课外题</td><td>不参与训练，只用来检验有没有真学会</td></tr>
+        <tr><td><b>自注意力页：句子 / Head / 矩阵视图切换</b></td><td>选择查看哪一份计算结果。切 Head 会换用另一套打分矩阵，属于「换个模型看」</td><td>显示内容会变；公式与训练逻辑不变</td></tr>
+        <tr><td><b>点击热力图格子（query / activeHead）</b></td><td>只决定右侧弧线与明细展示「哪一个词」</td><td class="hl2">完全不会影响矩阵数值</td></tr>
+      </tbody>
+    </table></div>
+    <p class="note">判断口诀：<b>训练过程中会被自动改写的，才是参数；开工前你手动填的，是超参数；算完打印出来的，是结果。</b></p>
+  </div>
+</div>
+
+<!-- ============ 2 ============ -->
+<div class="sec" id="s2">
+  <div class="sec-head"><span class="tag">LEVEL 2</span><h2>自注意力：参数变多，但道理没变</h2><span class="desc">对应 attention.py / attention_visual.html</span></div>
+  <div class="card">
+    <div class="lead" style="margin:0">
+      感知机只有 <b>3 个</b>可学的数；自注意力把「每个词该听谁的」也变成可学的数，于是多了一整套矩阵。但结构上仍是同一件事：<b>先定好框架（超参数），再由数据学出打分方式（参数）</b>。本页为了让你看清结构，把打分方式<b>手工写死</b>了 —— 这是演示，不是真实训练。具体差异见第 5 节。
+    </div>
+  </div>
+  <div class="card">
+    <h3>先记住这条流水线，再看下面的卡片</h3>
+    <div class="out">每个词 → 变成一串数字 X → 互相打分 QKᵀ → 除以 √d_k 和温度 → softmax 变百分比 A → 加权抄写 V 得到新笔记 O</div>
+    <p class="note">下面卡片按这条流水线的顺序排列：<b>数据 → 维度 → 打分矩阵 → 头数 → 缩放 → 开关 → 结果</b>，顺着读即可。</p>
+  </div>
+  <div id="cards2" class="pgrid"></div>
+</div>
+
+<!-- ============ 3 ============ -->
+<div class="sec" id="s3">
+  <div class="sec-head"><span class="tag">LEVEL 3</span><h2>动手拨两个旋钮</h2><span class="desc">所有数字都是页面现场计算的，不是预先写死的文案</span></div>
+  <div class="lab">
+
+    <div class="labbox">
+      <h3>实验 A · 学习率到底管不管用？</h3>
+      <p class="note" style="margin-top:0">同一道 OR 题，只改学习率 <code>η</code>，看收敛轮数会不会变。</p>
+      <div class="chips">
+        <button data-lr="0.01">0.01</button><button data-lr="0.1" class="on">0.1</button>
+        <button data-lr="0.5">0.5</button><button data-lr="1.0">1.0</button><button data-lr="2.0">2.0</button>
+      </div>
+      <div class="sliderrow"><span class="muted">η</span><input type="range" id="lrA" min="0.01" max="2" step="0.01" value="0.1"><span class="val" id="lrAv">0.10</span></div>
+      <div class="out" id="lrOut">—</div>
+      <p class="note" id="lrNote">—</p>
+    </div>
+
+    <div class="labbox">
+      <h3>实验 A′ · 换个模型，学习率就变得要命</h3>
+      <p class="note" style="margin-top:0">最小梯度下降例子：找 <code>f(w)=(w−2)²</code> 的最低点（正确答案 <code>w=2</code>），从 <code>w=0</code> 出发走 20 步。</p>
+      <div class="chips">
+        <button data-gd="0.1">0.1 稳</button><button data-gd="0.4" class="on">0.4 快</button>
+        <button data-gd="0.9">0.9 摆动</button><button data-gd="1.0">1.0 卡住</button><button data-gd="1.1">1.1 发散</button>
+      </div>
+      <div class="sliderrow"><span class="muted">η</span><input type="range" id="lrB" min="0.05" max="1.2" step="0.05" value="0.4"><span class="val" id="lrBv">0.40</span></div>
+      <div id="gdSvg"></div>
+      <div class="out" id="gdOut">—</div>
+    </div>
+  </div>
+
+  <div class="labbox" style="margin-top:14px">
+    <h3>实验 B · 温度怎么把「打分」变成「百分比」</h3>
+    <p class="note" style="margin-top:0">固定 4 个原始分数 <code>[2.0, 1.0, 0.5, 0.1]</code>（想象 4 个词的匹配程度），只改温度 <code>τ</code>，看 softmax 后的分配比例。四根柱子加起来永远是 100%。</p>
+    <div class="chips">
+      <button data-tp="0.3">0.3 偏心</button><button data-tp="0.6" class="on">0.6 本页默认</button>
+      <button data-tp="1.0">1.0 标准</button><button data-tp="2.0">2.0 平均</button>
+    </div>
+    <div class="sliderrow"><span class="muted">τ</span><input type="range" id="tempC" min="0.3" max="2" step="0.1" value="0.6"><span class="val" id="tempCv">0.6</span></div>
+    <div class="bars" id="tempBars"></div>
+    <div class="out" id="tempOut">—</div>
+    <p class="note">这正是自注意力页里那个温度滑块做的事。标准 Transformer 没有这个额外旋钮（等价于 <code>τ=1.0</code>）；本页取 0.6 只是因为 8 维演示数据打分太小，颜色对比会看不清。</p>
+  </div>
+</div>
+
+<!-- ============ 4 ============ -->
+<div class="sec" id="s4">
+  <div class="sec-head"><span class="tag">LEVEL 4</span><h2>一页速查表</h2><span class="desc">由上方卡片数据自动生成，不会有两处对不上的情况</span></div>
+  <div class="card">
+    <div class="scroll"><table id="cheat">
+      <thead><tr><th>参数</th><th>代码里的写法</th><th>类别</th><th>本例取值</th><th>真实模型常见取值</th></tr></thead>
+      <tbody></tbody>
+    </table></div>
+    <p class="note">「本例取值」指本工作区已交付的 4 个文件；「真实模型常见取值」是工业界/教材中的典型范围，属经验值而非硬性规定，会随任务、数据规模、优化器变化。</p>
+  </div>
+</div>
+
+<!-- ============ 5 ============ -->
+<div class="sec" id="s5">
+  <div class="sec-head"><span class="tag">LEVEL 5</span><h2>常见误区与本例的边界</h2><span class="desc">读完这节，就不会把演示当成真实大模型</span></div>
+  <div class="card qa">
+    <p><b>Q：把学习率调大，模型是不是就学得更快？</b><br>不一定，而且在本例的感知机里<b>完全没有影响</b>：η 从 0.01 调到 2.0，都是 4 轮收敛、误差序列都是 [2,2,1,0]，w 和 b 只是等比例放大，红线位置一模一样。原因是感知机只看「加权求和是正还是负」，整体乘一个正数不改变正负号。到了梯度下降类模型，η 才真正决定成败（见实验 A′）。</p>
+    <p><b>Q：权重 w 是不是越大越好？</b><br>不是。w 只有和 b、输入 x 放在一起才有意义，衡量的是「相对比例」。<code>w=[0.1,0.1], b=−0.1</code> 与 <code>w=[1,1], b=−1</code> 画出的是同一条线。</p>
+    <p><b>Q：温度 τ 是一个真实模型里也有的参数吗？</b><br>标准注意力的缩放是固定的 <code>1/√d_k</code>，没有独立温度项；τ 常见于文本生成的采样（0.6–1.0）、知识蒸馏等场景。本页和自注意力页加它是为了教学观察，已在页面标注「1.0 才是标准值」。</p>
+    <p><b>Q：自注意力页里那些漂亮的语义关联，是模型自己学出来的吗？</b><br><b>不是。</b>8 维词向量、打分矩阵 M 的规则权重（1.0–3.0）、位置先验都是手工设定的，用来模拟「训练完成后」的样子。勾选「随机权重」看到的均匀颜色，才是未训练状态。真实模型里这些矩阵由海量数据学出，人并读不懂每一维的含义。</p>
+    <p><b>Q：这些就是完整 Transformer 的全部参数了吗？</b><br>不是。真实模型还包含 <code>W_O</code> 多头拼接投影、残差连接、LayerNorm、前馈网络 FFN、词表嵌入、位置编码（RoPE / ALiBi），以及训练侧的优化器、权重衰减、dropout（注意力上常取 0.1）、warmup 与学习率调度、batch size 等。本例是<b>单层自注意力的前向计算</b>，用于理解核心运算，规模与完整模型不可同日而语。</p>
+    <p><b>Q：完全记不住怎么办？</b><br>只需记住三个：<code>w</code>/<code>b</code> 是学出来的答案，<code>lr</code>/<code>epochs</code>/<code>DIM</code> 是你先定好的旋钮，<code>A</code>/<code>O</code>/误差曲线是算完的结果。其余遇到时回查第 4 节速查表即可。</p>
+  </div>
+  <div class="card">
+    <h3>本例与真实模型的量级对照</h3>
+    <div class="scroll"><table>
+      <thead><tr><th>项目</th><th>本例</th><th>真实模型（典型量级）</th></tr></thead>
+      <tbody>
+        <tr><td>可学参数个数</td><td>感知机 3 个；注意力矩阵 8×8</td><td>数亿 ~ 数千亿</td></tr>
+        <tr><td>词向量维度 d_model</td><td>8</td><td>768（BERT-base）~ 8192 / 12288（大模型）</td></tr>
+        <tr><td>注意力头数 h</td><td>2</td><td>12（BERT-base）~ 96 / 128</td></tr>
+        <tr><td>输入长度 n</td><td>6 ~ 8 个 token</td><td>上下文窗口 4k ~ 128k token</td></tr>
+        <tr><td>训练数据</td><td>4 道例题 / 3 个句子</td><td>万亿级 token</td></tr>
+        <tr><td>训练轮数</td><td>4 轮</td><td>预训练通常 1 遍左右（靠海量数据），微调 1–10 轮</td></tr>
+      </tbody>
+    </table></div>
+    <p class="note">量级差异不改变原理：都是「猜错 → 按误差微调参数 → 再猜」，只是规模、优化器与工程实现不同。</p>
+  </div>
+</div>
+
+<div class="foot">
+  本页数值均由页面内 JavaScript 现场计算；感知机训练逻辑与 <code>perceptron.py</code> 等价，softmax 与缩放公式与 <code>attention.py</code> 一致。配套文件：<code>perceptron_visual.html</code>（学习过程可视化）、<code>attention_visual.html</code>（注意力矩阵可视化）。<br>
+  单文件、零第三方依赖；深色为默认主题，右上角可切换浅色以便与前两页对照阅读。
+</div>
+
+</div>
+
+<script>
+"use strict";
+
+/* ========== 参数数据：卡片与速查表共用同一份，避免两处不一致 ========== */
+/* kind: learn=学出来的参数 / set=人设定的超参数 / read=只读的结果 */
+const CARDS = [
+/* ---- LEVEL 1 感知机 ---- */
+{grp:1, name:"输入 x（样本 / 特征）", code:"X = [[0,0],[0,1],[1,0],[1,1]]", kind:"set",
+ plain:"一道**例题的题目部分**。本例每道题有两个数字 x1、x2，可以理解成两道判断题的答案组合。",
+ role:"模型拿它做计算；没有输入就没有可学的东西。特征的**个数**决定了 w 有几个数。",
+ common:"本例：4 个样本 × 2 个特征，取值只有 0 / 1。真实模型：图片像素、文字编号等，通常归一化到 0~1 或标准化成均值 0、方差 1。",
+ example:"[1, 0] 表示第一项为「是」、第二项为「否」，在 OR 题里标准答案是 1。",
+ tune:"特征越多，模型能表达的关系越复杂，但也越容易过拟合；特征缩放不统一会让训练变慢。",
+ here:"4 个样本 / 2 维 / 0 或 1", real:"归一化到 0~1，或标准化为均值 0、方差 1"},
+
+{grp:1, name:"标签 y（标准答案）", code:"y = [0, 1, 1, 1]", kind:"set",
+ plain:"每道例题**附带的正确答案**，训练时用来对答案。",
+ role:"提供「错在哪」的信号。误差 d 就是拿 y 减去模型的猜测算出来的。",
+ common:"二分类：0/1 或 −1/+1；多分类：类别编号或 one-hot 向量；本例 4 个 0/1 值。",
+ example:"[0,0] 的 y=0，[0,1] 的 y=1 —— 只要有一个是 1 结果就是 1，这就是 OR 门。",
+ tune:"不可「调大调小」，但标签标错会直接把模型教坏；换掉整套 y 就等于换了一个任务（OR → XOR）。",
+ here:"[0,1,1,1]", real:"0/1、−1/+1、one-hot 或类别编号"},
+
+{grp:1, name:"权重 w（最重要的参数）", code:"self.w = [0.0, 0.0] → [0.1, 0.1]", kind:"learn",
+ plain:"**每个输入有多重要**，是模型真正学到的东西。可以把 w1 想成「听 x1 多少」，w2 是「听 x2 多少」。",
+ role:"与输入相乘后求和：<code>w1·x1 + w2·x2</code>。训练全过程只干一件事：把 w 改到分对为止。",
+ common:"感知机初值常取全 0；神经网络初值取小随机数（Xavier / He，或标准差 0.02 的正态分布）；训练后的值没有固定范围，由数据决定。",
+ example:"本例从 [0,0] 出发，4 轮后变成 [0.1, 0.1]，两项一样重要 —— 这正是 OR 门「两者等价」的体现。",
+ tune:"不是手动调的。某个 w 变大，表示模型更依赖对应特征；若出现极端大的 w 往往是过拟合信号。",
+ here:"初值 [0,0]，学到 [0.1,0.1]", real:"初值全 0 或小随机；训练后无固定范围",
+ warn:"w 的绝对大小没有意义，要和 b 一起看。整体乘 10 倍（w=[1,1]、b=−1）画出的是同一条线。"},
+
+{grp:1, name:"偏置 b（门槛 / 及格线）", code:"self.b = 0.0 → −0.1", kind:"learn",
+ plain:"**整体抬高一档或压低一档的门槛**。没有它，分界线必须穿过原点，很多题就画不出来。",
+ role:"加在加权求和之后：<code>z = w·x + b</code>，再用 z ≥ 0 判 1。b 越小，越不容易判 1。",
+ common:"初值几乎都取 0；训练后的值由数据决定。真实网络的 LayerNorm 层常带可学偏置。",
+ example:"w=[0.1,0.1]、b=−0.1 时，[0,0] 得 −0.1 → 判 0；[1,0] 得 0 → 判 1。若 b 改成 +0.5，四个样本会全判 1。",
+ tune:"b 调低 = 更严格（判 1 变少）；调高 = 更宽松。但它由训练自动确定，不手动设定。",
+ here:"初值 0，学到 −0.1", real:"初值 0；训练后由数据决定"},
+
+{grp:1, name:"学习率 η（lr）", code:"lr = 0.1", kind:"set",
+ plain:"**每次猜错后改多大的步子**。像调淋浴水温：一次拧一点点，还是一次猛拧半圈。",
+ role:"乘在误差前面：<code>w ← w + η·d·x</code>。它控制每次修正的幅度，是所有超参数里最常被调的一个。",
+ common:"本例 0.1；感知机常用 0.01~1；SGD 常 1e-3~1e-1；Adam 默认 1e-3；大模型预训练常在 1e-4 量级，并配合 warmup 与余弦衰减。",
+ example:"η=0.1 时每次把 w 挪 0.1；η=1.0 时每次挪 1.0，但最终红线位置完全相同（见下方）。",
+ tune:"在梯度下降类模型里：太小 → 学得极慢；太大 → 来回震荡甚至发散。在感知机里却只等比缩放 w、b，不改变收敛轮数。",
+ here:"0.1（可调 0.01~2）", real:"1e-4 ~ 1e-1，依优化器而定",
+ warn:"反直觉但已实测：本例 η 取 0.01 / 0.1 / 1.0 / 2.0，一律 4 轮收敛、误差序列都是 [2,2,1,0]。因为感知机只看 z 的正负号，整体缩放不改变符号。请务必做一遍实验 A。"},
+
+{grp:1, name:"最大轮数 max_epochs", code:"max_epochs = 100", kind:"set",
+ plain:"**最多把全部例题翻几遍**。一轮（epoch）= 把 4 道题从头到尾做一遍。",
+ role:"训练的上限保险丝：达到上限就停，避免模型学不会时无限循环。本例另有「提前停止」：一整轮零错误就立刻结束。",
+ common:"玩具示例 10~1000；小数据训练几十到几百；微调 1~10；大模型预训练常 1 遍左右（靠数据量而非遍数）。",
+ example:"本例设 100，但第 4 轮误差归零就提前停了 —— 上限没用上。XOR 永远学不会，就会一直跑到 100 轮。",
+ tune:"太少 → 还没学会就被叫停；太多 → 浪费算力，或在复杂模型上过拟合。通常配合「早停」使用。",
+ here:"100（实际 4 轮停止）", real:"微调 1~10；预训练约 1 遍 + 早停"},
+
+{grp:1, name:"误差 d（纠错信号）", code:"d = target − predict(x)", kind:"read",
+ plain:"**猜没猜错、以及该往哪边改**。猜对是 0；少判了是 +1；多判了是 −1。",
+ role:"它同时给出「要不要改」和「往哪个方向改」，是整个学习闭环的驱动力。",
+ common:"感知机：只能取 −1 / 0 / +1；逻辑回归与神经网络：换成连续的梯度（任意实数），配合损失函数的导数。",
+ example:"样本 [0,1] 标准答案 1，模型猜 0，则 d=+1，于是 w2 增加 0.1 —— 下次更倾向判 1。",
+ tune:"只读，不能调。若长期不为 0（如 XOR），说明问题本身线性不可分，加再多轮也没用。",
+ here:"取值 −1 / 0 / +1", real:"连续梯度（任意实数）"},
+
+{grp:1, name:"阶跃激活与阈值 0", code:"return 1 if z >= 0 else 0", kind:"set",
+ plain:"**把算出来的数字一刀切成 0 或 1 的开关**。阈值 0 就是那条「及格线」。",
+ role:"把连续的 z 变成可判别的类别。换成 Sigmoid 就得到逻辑回归，换成 ReLU 就进入神经网络。",
+ common:"阈值固定 0 最普遍；实际业务中可按代价调整判决阈值；现代网络多用 Sigmoid / ReLU / GELU 等连续激活。",
+ example:"z=−0.1 → 0；z=0 → 1（本例用的是 ≥）；z=0.05 → 1。",
+ tune:"阈值调高 → 判 1 更保守；调低 → 更激进。它属于「模型结构选择」，本例写死为 0。",
+ here:"阈值 0，激活为阶跃函数", real:"Sigmoid / ReLU / GELU；阈值按业务调整"},
+
+{grp:1, name:"每轮修正次数 errors", code:"self.errors_per_epoch = [2,2,1,0]", kind:"read",
+ plain:"**一轮里改了几次参数**，也就是那张误差曲线柱状图。",
+ role:"体检指标：降到 0 表示学会了（收敛）；长期不降表示学不会。",
+ common:"无固定取值，范围 0 ~ 样本数。本例每轮最多 4 次。",
+ example:"OR：[2,2,1,0] 收敛；AND：[2,3,3,0] 收敛；XOR：稳定在 3~4，30 轮也不归零。",
+ tune:"只读。它是判断「要不要换模型」的依据，不是可以拧的旋钮。",
+ here:"[2,2,1,0]", real:"诊断量，无固定范围"},
+
+{grp:1, name:"决策边界", code:"0.1·x1 + 0.1·x2 − 0.1 = 0", kind:"read",
+ plain:"**那条红线**，也就是模型划出的两类地盘分界线。本例化简后是 <code>x1 + x2 = 1</code>。",
+ role:"它把 w、b 变成看得见的几何结果；模型对新样本的判断完全由它决定，而不是查表。",
+ common:"二维时是一条直线，三维是一个平面，高维是超平面；非线性模型才会出现弯曲边界。",
+ example:"[0.5, 0.8] 没出现在训练集里，代入得 0.05 > 0 → 判 1。这证明它学的是边界而非背诵答案。",
+ tune:"只读结论。想让它变弯，只能换模型结构（加隐藏层），调参数做不到。",
+ here:"x1 + x2 = 1", real:"高维超平面 / 非线性曲面"},
+
+/* ---- LEVEL 2 自注意力 ---- */
+{grp:2, name:"token 与句长 n", code:"tokens = ['猫','追','老鼠',…]  n = 8", kind:"set",
+ plain:"**切好的词**，以及这一句里有几个词。注意力矩阵就是 n × n 的方格。",
+ role:"决定矩阵大小。每个词都要对其他所有词打一次分，所以计算量随 n 的平方增长。",
+ common:"本例 6~8 个；真实模型用上下文窗口衡量，常见 4k / 8k / 32k / 128k token。中文 1 个字不等于 1 个 token，具体由分词器决定。",
+ example:"「猫/追/老鼠/，/它/跑/得/快」共 8 个 token，热力图就是 8 行 8 列 = 64 格。",
+ tune:"n 越大，能读的文本越长，但计算与显存按平方增长 —— 这是长上下文昂贵的主要原因。",
+ here:"6 ~ 8", real:"上下文窗口 4k ~ 128k"},
+
+{grp:2, name:"维度 DIM（d_model）", code:"DIM = 8", kind:"set",
+ plain:"**用几个数字描述一个词**。本例给每个词贴 8 个特征标签：是不是实体、动作、代词、动物…",
+ role:"维度越高，一个词能携带的细微差别越多；同时 Q、K、V 矩阵的尺寸也由它决定。",
+ common:"本例 8；BERT-base 768；大模型常见 4096 / 8192 / 12288。每头的 d_k 通常固定 64 左右。",
+ example:"「猫」= [1,0,0,0,1,0,0,0]，表示「是实体、是动物」，其余为 0。这种 0/1 手写向量只用于演示。",
+ tune:"调大 → 表达力更强但参数量、算力上升；调小 → 省资源但细节丢失。属于开工前就要定好的架构决策。",
+ here:"8", real:"768 ~ 12288"},
+
+{grp:2, name:"词嵌入 X", code:"X = [vec(ENT=1, ANIM=1), …]", kind:"set",
+ plain:"**把词翻译成数字的那张表**，每行是一个词，每列是一个特征。",
+ role:"注意力的原始输入，Q / K / V 都由它乘矩阵得到。",
+ common:"真实模型里 X 是训练学出来的（词表几万行 × 上千列），人读不懂每一列；本例是手工写的 0 / 1 / 0.5。",
+ example:"「红色」标了 MOD=1（修饰语），「小球」标了 ENT=1、OBJ=1，于是两者打分天然更高。",
+ tune:"不是训练中逐个调的旋钮；真实模型由反向传播整体学习，或用预训练嵌入初始化。",
+ here:"手工 0 / 1 / 0.5 稀疏向量", real:"训练所得，词表数万 × 上千维"},
+
+{grp:2, name:"Q / K / V 与打分矩阵 M", code:"Q = X·M,  K = X,  V = X", kind:"learn",
+ plain:"三个角色：**Q 是我提的问题，K 是别人胸前的标签，V 是别人实际要说的内容**。本例把「怎么提问」写进矩阵 M，并令 K、V 直接等于 X。",
+ role:"<code>Q·Kᵀ</code> 算出「谁和谁更配」的分数；<code>A·V</code> 再把内容按权重抄进新笔记。真实模型里 W_Q、W_K、W_V 是三块独立可学的矩阵。",
+ common:"真实模型：尺寸 d_model × d_k 的可学矩阵，用小随机数初始化，由训练确定；本例 M 是 8×8 手工矩阵，等价于 W_Q·W_Kᵀ。",
+ example:"M[PRON][ANIM]=2.8 表示「代词」对「动物」特别敏感，所以「它」会给「猫」「老鼠」高分。",
+ tune:"不是手动调的。它正是「语义关联从哪来」的答案：训练改的就是这类矩阵。",
+ here:"8×8 手工矩阵，K=V=I", real:"W_Q / W_K / W_V 由训练学出",
+ warn:"本例 M 是手工设定，用来模拟训练后的样子；勾选「随机权重」可看到未训练时注意力接近均匀。真实模型不会有人手写规则表。"},
+
+{grp:2, name:"规则权重（RULES）", code:"('PRON','ANIM'): 2.8", kind:"set",
+ plain:"**打分表里的具体分数**：哪类词该给哪类词加多少分。",
+ role:"决定注意力偏向语义关系还是相邻位置。Head 1 管语义（1.0~3.0），Head 2 管局部（1.0~1.4）。",
+ common:"仅本演示存在；真实模型没有可读的规则表，这些偏好隐含在学出来的矩阵数值里。",
+ example:"「读」是动作 ACT，对实体 ENT 加 2.2 分，所以「读」会同时看向「学生」和「书」。",
+ tune:"分数差距越大，注意力越集中；全部设成一样，热力图就会变得均匀。",
+ here:"语义 1.0~3.0；局部 1.0~1.4", real:"无对应手工项，由训练隐式学得"},
+
+{grp:2, name:"对角线值 diag", code:"Head1 diag=0.5 / Head2 diag=1.5", kind:"set",
+ plain:"**一个词看自己多少**，也就是打分矩阵对角线上的数。",
+ role:"调高 = 更保留自身信息，调低 = 更依赖上下文。Head 2 调得高，配合局部偏好让它更关注附近。",
+ common:"仅本演示存在，无通用取值；真实模型靠 W_O 投影与残差连接来平衡「自己」和「别人」。",
+ example:"diag=1.5 时，同类词之间（如两个实体）自身匹配分更高，热力图对角线更亮。",
+ tune:"调大 → 对角线变深、更「自我中心」；调小 → 更愿意听别人的。",
+ here:"0.5 / 1.5", real:"无独立手工项"},
+
+{grp:2, name:"注意力头数 h", code:"HEADS = {Head 1, Head 2}  h = 2", kind:"set",
+ plain:"**同时开几场会**。每场会用自己的一套打分方式，关注不同关系。",
+ role:"让模型并行捕捉多种关系：本例 Head 1 看语义（谁指代谁、谁修饰谁），Head 2 看位置（相邻的词）。",
+ common:"本例 2；BERT-base 12；大模型 32 / 64 / 96 / 128。通常令每头维度 d_k = d_model / h（约 64）。",
+ example:"同是「它」，Head 1 主要看「猫/老鼠」，Head 2 主要看左右相邻的词 —— 切换 head 能直接看到两种分工。",
+ tune:"头数多 → 关系类型更丰富，但每头维度变小、计算与显存上升；并非越多越好。",
+ here:"2", real:"12 ~ 128"},
+
+{grp:2, name:"缩放因子 √d_k", code:"scale = Math.sqrt(DIM) = 2.828", kind:"set",
+ plain:"**防止分数太大的固定除数**。维度越高，点积越容易变得很大，softmax 会被推向非黑即白。",
+ role:"把 <code>Q·Kᵀ</code> 除以 √d_k，让分数回到温和区间，训练时梯度才稳定。标准 Transformer 里它是公式的一部分，不可调。",
+ common:"固定为 √d_k（本例 √8 ≈ 2.828）；标准等价温度 τ = 1.0。",
+ example:"某个打分 2.8 除以 2.828 ≈ 1.0，再经 softmax 就得到平滑的百分比，而不是 99% 押在一个词上。",
+ tune:"不手动调。它随维度自动变化；本演示另加的温度 τ 是额外的教学旋钮。",
+ here:"√8 ≈ 2.828", real:"√d_k（d_k 常为 64 → 8）"},
+
+{grp:2, name:"温度 τ（temperature）", code:"DEFAULT_TEMP = 0.6", kind:"set",
+ plain:"**控制百分比是「偏心」还是「平均」**。同一个分数除以 τ：τ 小 = 赢家通吃，τ 大 = 人人有份。",
+ role:"作用在 softmax 之前：<code>softmax(S / (√d_k · τ))</code>。它只改变分布的尖锐程度，不改变分数排序。",
+ common:"标准注意力等价于 1.0；本页滑块 0.3~2.0、默认 0.6；文本生成采样常 0.6~1.0；知识蒸馏等场景可见 2~8。",
+ example:"分数 [2,1,0.5,0.1]：τ=0.3 → 最高 95.8%；τ=1.0 → 57.5%；τ=2.0 → 40.6%（做一遍实验 B）。",
+ tune:"调小 → 更尖锐、更自信；调大 → 更平滑、更保守。过大的 τ 会让注意力几乎均匀，等于没学到关系。",
+ here:"0.6（滑块 0.3~2.0）", real:"标准 1.0；生成采样 0.6~1.0",
+ warn:"0.6 是本演示值，不是标准值。取它是因为 8 维稀疏嵌入打分偏小，1.0 时颜色对比太弱；页面可随时调回 1.0。"},
+
+{grp:2, name:"位置先验 pos_bias 与衰减 1.5", code:"pos = 0.15 / 1.20；usePos = true", kind:"set",
+ plain:"**给「离得近的词」额外加分**的手工小补丁，以及控制它是否启用的开关 <code>usePos</code>。0.15 / 1.20 是加分强度，1.5 是附近范围。",
+ role:"在 logits 上加一项 <code>pos_bias · exp(−|i−j|/1.5)</code>，让相邻词更容易被注意到。Head 2 的 1.20 远大于 Head 1 的 0.15，所以它是「局部头」。",
+ common:"仅本演示存在；usePos 默认勾选（true）。真实模型用位置编码（RoPE / ALiBi / 可学习位置嵌入），没有这个手工标量和开关。",
+ example:"相隔 0 个词加满 0.15，隔 1 个词约 0.077，隔 3 个词约 0.020 —— 越远几乎不剩。",
+ tune:"调大 → 热力图对角线附近一条带变亮；调小 → 只看语义关系。取消勾选 usePos 会彻底关掉这项加分，注意力只由语义打分决定。",
+ here:"0.15 / 1.20，衰减 1.5，usePos 默认 true", real:"RoPE / ALiBi / 可学习位置嵌入"},
+
+{grp:2, name:"因果掩码 causal", code:"causal = false（默认关）", kind:"set",
+ plain:"**不许偷看后面的词**，是一个开 / 关开关。",
+ role:"把注意力矩阵右上半的分数置为 −∞，softmax 后这些格子恰好变成 0。",
+ common:"GPT 类生成模型必开；BERT 类理解模型不开；本例默认关，可手动勾选。它不是数值，而是结构选择。",
+ example:"勾选后「猫」只能看到自己，第 5 个词「它」只能看前 5 个词 —— 像写作文不能抄自己还没写的下一句。",
+ tune:"只有开 / 关。开启后信息单向流动，才能用于逐词生成。",
+ here:"默认 false", real:"解码器 true / 编码器 false"},
+
+{grp:2, name:"随机权重开关与随机种子", code:"random_weights = false；seed = 20261106", kind:"set",
+ plain:"**一键把打分矩阵换成乱数**，用来模拟「还没训练」的模型。种子是让乱数每次都一样、便于复现的编号。",
+ role:"教学对照组：勾上后语义规则消失，注意力变得接近均匀，直观说明关联来自训练而非架构。",
+ common:"本演示默认关。真实模型初始化本来就是随机的（小随机数），只是经过训练才变得有结构；固定种子是实验复现的通用做法。",
+ example:"「它」的最大注意力：训练后 0.375，随机权重约 0.158（接近 8 个词均分的 0.125）。",
+ tune:"只有开 / 关。种子换一个数，乱数会变，但「接近均匀」这个结论不变。",
+ here:"默认 false / seed 20261106", real:"随机初始化 + 固定种子复现实验"},
+
+{grp:2, name:"注意力权重 A", code:"A = softmax(logits)", kind:"read",
+ plain:"**最终的百分比表**：每行是一个词「把注意力分给谁、各分多少」。热力图画的就是它。",
+ role:"作为权重去加权求和 V：<code>O = A·V</code>。每行加起来严格等于 100%。",
+ common:"每格 0~1，行和恒为 1；所有值都非负。",
+ example:"「它」→ 老鼠 37.5%、猫 36.4%；「红色」→ 小球 64.4%；「读」→ 学生 39.4%、书 32.6%。",
+ tune:"只读结果。它表示「注意力预算怎么分」，不是「两个词有没有因果关系的证明」。",
+ here:"行和 = 1，见示例", real:"同左，行和恒为 1"},
+
+{grp:2, name:"原始分数 QKᵀ 与 logits", code:"raw / logits", kind:"read",
+ plain:"**softmax 之前的两版中间分数**：raw 是纯点积，logits 是除以 √d_k、温度并加上位置先验、掩码之后的分数。",
+ role:"页面「分数 QKᵀ / logits / 注意力 A」三个视图切换的就是这三步，方便看清百分比是怎么来的。",
+ common:"任意实数；被掩码的位置是 −∞。",
+ example:"某格 raw=2.8 → 除以 2.828 和 0.6 后约 1.65 → 加位置先验 → 经 softmax 变成一个百分比。",
+ tune:"只读。数值大小没有绝对意义，只有同一行内的相对大小决定分到多少注意力。",
+ here:"任意实数 / 掩码处 −∞", real:"同左"},
+
+{grp:2, name:"输出向量 O", code:"O = A·V（8 维）", kind:"read",
+ plain:"**每个词更新后的新笔记**：把别人提供的信息按注意力比例混合起来。",
+ role:"这是这一层真正交给下一层的产物。词的含义因此带上了上下文（例如「它」的向量掺入了「猫」「老鼠」的特征）。",
+ common:"维度等于 d_model；真实模型还会经过 W_O 投影、残差相加与 LayerNorm。",
+ example:"「它」的 O 里会同时出现 ENT、ANIM 成分，因为猫和老鼠的信息被按 36% / 37% 抄了进来。",
+ tune:"只读结果。想改变它，得改前面的 M / X / 温度等。",
+ here:"8 维", real:"d_model 维 + 投影 / 残差 / LayerNorm"}
+];
+
+/* ========== 渲染卡片与速查表 ========== */
+function esc(s){return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");}
+function md(s){
+  return esc(s).replace(/\*\*(.+?)\*\*/g,"<b>$1</b>")
+    .replace(/&lt;code&gt;/g,"<code>").replace(/&lt;\/code&gt;/g,"</code>");
+}
+const KIND = {
+  learn:{label:"学出来的参数", cls:"b-learn", f:"learn"},
+  set:{label:"人设定的超参数", cls:"b-set", f:"set"},
+  read:{label:"只读的结果", cls:"b-read", f:"read"}
+};
+let filter = "all", query = "";
+
+function cardHTML(c){
+  const k = KIND[c.kind];
+  let h = '<div class="pcard"><div class="ph"><span class="nm">'+esc(c.name)+'</span>'+
+          '<span class="badge '+k.cls+'">'+k.label+'</span></div>'+
+          '<div class="ln"><span class="k">代码</span><span class="v"><code>'+esc(c.code)+'</code></span></div>'+
+          '<div class="ln"><span class="k">是什么</span><span class="v">'+md(c.plain)+'</span></div>'+
+          '<div class="ln"><span class="k">作用</span><span class="v">'+md(c.role)+'</span></div>'+
+          '<div class="ln"><span class="k">常见取值</span><span class="v">'+md(c.common)+'</span></div>'+
+          '<div class="ln"><span class="k">举例</span><span class="v">'+md(c.example)+'</span></div>'+
+          '<div class="ln"><span class="k">调大调小</span><span class="v">'+md(c.tune)+'</span></div>';
+  if(c.warn) h += '<div class="warn">⚠ '+md(c.warn)+'</div>';
+  return h + '</div>';
+}
+function renderCards(){
+  const q = query.trim().toLowerCase();
+  for(const grp of [1,2]){
+    const list = CARDS.filter(c=>c.grp===grp)
+      .filter(c=>filter==="all" || KIND[c.kind].f===filter)
+      .filter(c=>!q || (c.name+c.code+c.plain+c.common+c.example).toLowerCase().indexOf(q)>=0);
+    const host = document.getElementById("cards"+grp);
+    host.innerHTML = list.length ? list.map(cardHTML).join("")
+      : '<div class="empty">没有匹配的参数，换个关键词试试。</div>';
+  }
+  const tb = document.querySelector("#cheat tbody");
+  tb.innerHTML = CARDS.map(c=>'<tr><td><b>'+esc(c.name)+'</b></td><td><code>'+esc(c.code)+
+    '</code></td><td>'+KIND[c.kind].label+'</td><td>'+esc(c.here)+'</td><td>'+esc(c.real)+'</td></tr>').join("");
+}
+function $(id){return document.getElementById(id);}
+
+/* ========== 实验 A：感知机训练（与 perceptron.py 等价） ========== */
+function perceptronTrain(lr){
+  const X=[[0,0],[0,1],[1,0],[1,1]], y=[0,1,1,1];
+  let w=[0,0], b=0; const hist=[];
+  for(let ep=0; ep<100; ep++){
+    let errs=0;
+    for(let i=0;i<X.length;i++){
+      const z=w[0]*X[i][0]+w[1]*X[i][1]+b;
+      const pred=z>=0?1:0;
+      const d=y[i]-pred;
+      if(d!==0){ w=[w[0]+lr*d*X[i][0], w[1]+lr*d*X[i][1]]; b+=lr*d; errs++; }
+    }
+    hist.push(errs);
+    if(errs===0) break;
+  }
+  return {w:w, b:b, hist:hist};
+}
+function labA(){
+  const lr=parseFloat($("lrA").value);
+  $("lrAv").textContent=lr.toFixed(2);
+  const r=perceptronTrain(lr);
+  const f=v=>(Math.abs(v)<1e-10?0:v).toFixed(3);
+  $("lrOut").innerHTML =
+    "收敛轮数  <b>"+r.hist.length+"</b>\n"+
+    "每轮误差  "+JSON.stringify(r.hist)+"\n"+
+    "权重 w    ["+f(r.w[0])+", "+f(r.w[1])+"]\n"+
+    "偏置 b    "+f(r.b)+"\n"+
+    "决策边界  "+f(r.w[0])+"·x1 + "+f(r.w[1])+"·x2 + ("+f(r.b)+") = 0";
+  const ratio=r.w[0]/lr;
+  $("lrNote").innerHTML = "把 η 换成别的值再试：<b>收敛轮数和误差序列始终不变</b>，w、b 只是等比缩放（此处 w/η = "+ratio.toFixed(1)+"），所以化简后的边界永远是 <b>x1 + x2 = 1</b>。要看到学习率的真正威力，看右边的梯度下降实验。";
+}
+
+/* ========== 实验 A′：一维梯度下降 ========== */
+function gdTrace(lr, steps){
+  let w=0; const h=[w];
+  for(let i=0;i<steps;i++){ w = w - lr*2*(w-2); h.push(w); }
+  return h;
+}
+function labB(){
+  const lr=parseFloat($("lrB").value);
+  $("lrBv").textContent=lr.toFixed(2);
+  const h=gdTrace(lr,20);
+  const W=420,H=170,pad=22, clamp=v=>Math.max(-4,Math.min(6,v));
+  const xAt=i=>pad+i*(W-2*pad)/20;
+  const yAt=v=>H-pad-(clamp(v)+4)*(H-2*pad)/10;
+  let pts=h.map((v,i)=>xAt(i).toFixed(1)+","+yAt(v).toFixed(1)).join(" ");
+  let svg='<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;height:auto;display:block;margin:6px 0 10px" '+
+    'preserveAspectRatio="xMidYMid meet" aria-label="梯度下降轨迹">'+
+    '<rect x="0" y="0" width="'+W+'" height="'+H+'" fill="transparent"/>'+
+    '<line x1="'+pad+'" y1="'+yAt(2)+'" x2="'+(W-pad)+'" y2="'+yAt(2)+'" stroke="#4ec9a0" stroke-width="1.5" stroke-dasharray="5 4"/>'+
+    '<text x="'+(W-pad-4)+'" y="'+(yAt(2)-6)+'" fill="#4ec9a0" font-size="11" text-anchor="end">目标 w = 2</text>'+
+    '<polyline points="'+pts+'" fill="none" stroke="#5aa9ff" stroke-width="2" stroke-linejoin="round"/>';
+  for(let i=0;i<=20;i+=5){
+    svg+='<circle cx="'+xAt(i)+'" cy="'+yAt(h[i])+'" r="2.6" fill="#5aa9ff"/>';
+  }
+  svg+='<text x="'+pad+'" y="'+(H-5)+'" fill="#77899d" font-size="10">第 0 步</text>'+
+       '<text x="'+(W-pad)+'" y="'+(H-5)+'" fill="#77899d" font-size="10" text-anchor="end">第 20 步</text></svg>';
+  $("gdSvg").innerHTML=svg;
+  const last=h[h.length-1];
+  let state;
+  if(Math.abs(lr-1)<1e-9) state="来回跳：0 ↔ 4，永远到不了 2";
+  else if(lr>1) state="发散：偏离目标越来越远";
+  else if(lr>0.5) state="震荡收敛：在目标两侧来回摆，走得慢";
+  else if(Math.abs(last-2)<1e-4) state="收敛：单调逼近并到达 w = 2";
+  else state="单调逼近 w = 2（步子偏小，多走几步即可）";
+  $("gdOut").innerHTML="第 20 步 w = <b>"+(Math.abs(last)>1e6?last.toExponential(2):last.toFixed(4))+"</b>\n状态    "+state+
+    "\n判据    0 &lt; η &lt; 0.5 单调收敛；0.5 &lt; η &lt; 1 震荡收敛；η = 1 来回跳；η &gt; 1 发散";
+}
+
+/* ========== 实验 B：softmax 温度 ========== */
+const SCORES=[2.0,1.0,0.5,0.1], LABELS=["词 A","词 B","词 C","词 D"];
+function softmaxT(s,t){
+  const z=s.map(v=>v/t), top=Math.max.apply(null,z), e=z.map(v=>Math.exp(v-top));
+  const sum=e.reduce((a,b)=>a+b,0);
+  return e.map(v=>v/sum);
+}
+function labC(){
+  const t=parseFloat($("tempC").value);
+  $("tempCv").textContent=t.toFixed(1);
+  const a=softmaxT(SCORES,t);
+  $("tempBars").innerHTML=LABELS.map((l,i)=>
+    '<div class="bar"><span class="bl">'+l+'</span><span class="bt"><span class="bf" style="width:'+
+    (a[i]*100).toFixed(2)+'%"></span></span><span class="bv">'+(a[i]*100).toFixed(1)+'%</span></div>').join("");
+  $("tempOut").innerHTML="τ = <b>"+t.toFixed(1)+"</b>　最高占比 <b>"+(Math.max.apply(null,a)*100).toFixed(1)+
+    "%</b>　四项合计 "+ (a.reduce((x,y)=>x+y,0)*100).toFixed(1)+"%"+
+    "\n原始分数固定为 [2.0, 1.0, 0.5, 0.1]，排序从未改变；变的只是分配得有多偏心。";
+}
+
+/* ========== 事件绑定 ========== */
+function bindChips(attr, inputId, lab){
+  const btns=document.querySelectorAll("["+attr+"]");
+  for(let i=0;i<btns.length;i++){
+    btns[i].addEventListener("click", function(){
+      $(inputId).value=this.getAttribute(attr);
+      for(let j=0;j<btns.length;j++) btns[j].classList.remove("on");
+      this.classList.add("on");
+      lab();
+    });
+  }
+}
+function bindFilters(){
+  const btns=document.querySelectorAll("[data-f]");
+  for(let i=0;i<btns.length;i++){
+    btns[i].addEventListener("click", function(){
+      filter=this.getAttribute("data-f");
+      for(let j=0;j<btns.length;j++) btns[j].classList.remove("on");
+      this.classList.add("on");
+      renderCards();
+    });
+  }
+}
+$("themeBtn").addEventListener("click", function(){
+  const light=document.body.getAttribute("data-theme")==="light";
+  document.body.setAttribute("data-theme", light?"dark":"light");
+  this.textContent=light?"切换浅色":"切换深色";
+});
+$("q").addEventListener("input", function(){ query=this.value; renderCards(); });
+$("lrA").addEventListener("input", labA);
+$("lrB").addEventListener("input", labB);
+$("tempC").addEventListener("input", labC);
+bindChips("data-lr","lrA",labA);
+bindChips("data-gd","lrB",labB);
+bindChips("data-tp","tempC",labC);
+bindFilters();
+renderCards();
+labA(); labB(); labC();
+</script>
+<script src="ai_helper.js"></script>
+</body>
+</html>

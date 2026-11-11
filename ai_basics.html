@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AI 入门 · 从零到一的知识地图</title>
+<style>
+:root{
+  --bg:#0f141b; --card:#171e28; --card2:#1d2632; --line:#2b3746;
+  --tx:#e6edf5; --tx2:#a8b8c9; --tx3:#77899d;
+  --pos:#5aa9ff; --neg:#e0a84e; --bound:#f07373; --ok:#4ec9a0;
+}
+body[data-theme="light"]{
+  --bg:#f5f8fc; --card:#ffffff; --card2:#f4f8fd; --line:#dce6f2;
+  --tx:#1a2532; --tx2:#546577; --tx3:#7c8b9c;
+  --pos:#185fa5; --neg:#ba7517; --bound:#a32d2d; --ok:#1d9e75;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--tx);
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;
+  line-height:1.75;-webkit-font-smoothing:antialiased}
+.wrap{max-width:920px;margin:0 auto;padding:30px 22px 80px}
+
+/* 顶部 */
+header{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:6px}
+h1{font-size:26px;font-weight:600;margin:0 0 6px;letter-spacing:.3px}
+.sub{color:var(--tx2);font-size:14px;margin:0}
+.themeBtn{cursor:pointer;border:1px solid var(--line);background:var(--card);color:var(--tx2);
+  border-radius:9px;padding:7px 13px;font-size:12px;flex:none;transition:.15s}
+.themeBtn:hover{color:var(--tx);border-color:var(--pos)}
+
+/* 目录 */
+.toc{position:sticky;top:0;z-index:20;background:var(--bg);padding:10px 0;margin:14px 0 6px;
+  border-bottom:1px solid var(--line);display:flex;gap:7px;flex-wrap:wrap}
+.toc a{font-size:12px;color:var(--tx3);text-decoration:none;border:1px solid var(--line);
+  background:var(--card);border-radius:20px;padding:4px 11px;transition:.15s;white-space:nowrap}
+.toc a:hover{color:var(--pos);border-color:var(--pos)}
+
+/* 章节 */
+.sec{margin:34px 0 0;scroll-margin-top:60px}
+.lvl{display:inline-block;font-size:11px;font-weight:600;letter-spacing:1px;color:var(--pos);
+  border:1px solid var(--pos);border-radius:20px;padding:2px 10px;margin-bottom:8px}
+h2{font-size:21px;font-weight:600;margin:0 0 4px}
+.diff{font-size:11px;color:var(--tx3);margin-left:8px;font-weight:400}
+.pre{font-size:12.5px;color:var(--tx2);background:var(--card2);border:1px dashed var(--line);
+  border-radius:9px;padding:8px 12px;margin:12px 0}
+.pre b{color:var(--tx);font-weight:500}
+.pre .arrow{color:var(--pos);font-weight:600}
+p{font-size:14.5px;color:var(--tx);margin:12px 0}
+.muted{color:var(--tx2)}
+b{color:var(--tx);font-weight:600}
+.lead{font-size:14px;line-height:1.85;color:var(--tx);background:var(--card2);
+  border-left:3px solid var(--pos);padding:11px 14px;border-radius:0 8px 8px 0;margin:12px 0}
+.analogy{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 15px;
+  margin:14px 0;font-size:14px;color:var(--tx2)}
+.analogy b{color:var(--pos)}
+.link{display:flex;align-items:center;gap:10px;background:var(--card2);border:1px solid var(--line);
+  border-left:3px solid var(--ok);border-radius:0 10px 10px 0;padding:10px 14px;margin:16px 0;font-size:13.5px;color:var(--tx2)}
+.link a{color:var(--ok);text-decoration:none;font-weight:600;border-bottom:1px dashed var(--ok)}
+.link a:hover{opacity:.8}
+.link .ico{font-size:16px;flex:none}
+
+/* 嵌套关系图（AI⊃ML⊃DL） */
+.nest{display:grid;gap:10px;margin:18px 0}
+.nest .ring{border:1px solid var(--line);border-radius:12px;padding:14px 16px;background:var(--card)}
+.nest .ring.r1{border-color:var(--pos)}
+.nest .ring.r2{border-color:var(--neg);margin-left:22px}
+.nest .ring.r3{border-color:var(--ok);margin-left:44px}
+.nest .ring b{font-size:15px}
+.nest .ring span{font-size:12.5px;color:var(--tx2);display:block;margin-top:2px}
+
+/* 表格 */
+.tbl{width:100%;border-collapse:collapse;margin:16px 0;font-size:13.5px}
+.tbl th,.tbl td{border:1px solid var(--line);padding:9px 11px;text-align:left;vertical-align:top}
+.tbl th{background:var(--card2);color:var(--tx);font-weight:600;font-size:13px}
+.tbl td{color:var(--tx2)}
+.tbl td b{color:var(--tx)}
+
+/* 列表 */
+ul,ol{padding-left:22px;margin:10px 0}
+li{font-size:14.5px;color:var(--tx);margin:6px 0}
+li b{font-weight:600}
+
+/* 时间线 */
+.timeline{margin:20px 0 6px;position:relative;padding-left:26px}
+.timeline::before{content:"";position:absolute;left:8px;top:4px;bottom:4px;width:2px;background:var(--line)}
+.tl{position:relative;margin:0 0 20px}
+.tl::before{content:"";position:absolute;left:-22px;top:5px;width:11px;height:11px;border-radius:50%;
+  background:var(--pos);border:2px solid var(--bg)}
+.tl.era::before{background:var(--neg)}
+.tl.year{font-size:12px;color:var(--pos);font-weight:600;letter-spacing:.5px}
+.tl.era .year{color:var(--neg)}
+.tl .t{font-size:15px;font-weight:600;margin:1px 0 2px}
+.tl .d{font-size:13.5px;color:var(--tx2);line-height:1.75}
+.tl .tag2{display:inline-block;font-size:10.5px;border:1px solid var(--line);border-radius:10px;
+  padding:0 7px;margin-left:6px;color:var(--tx3);vertical-align:middle}
+.tl .tag2.warm{color:var(--bound);border-color:var(--bound)}
+.tl .tag2.cool{color:var(--pos);border-color:var(--pos)}
+
+/* 关联阶梯图 */
+.ladder{margin:22px 0;display:grid;gap:0}
+.step{display:flex;gap:14px;align-items:flex-start;position:relative}
+.step .dot{flex:none;width:34px;height:34px;border-radius:50%;background:var(--pos);color:#fff;
+  display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;margin-top:2px}
+.step .body{padding:2px 0 18px;flex:1;border-left:2px dashed var(--line);margin-left:16px;padding-left:18px;position:relative;left:-16px}
+.step:last-child .body{border-left:none}
+.step .body b{font-size:14.5px;display:block;margin-bottom:2px}
+.step .body span{font-size:13px;color:var(--tx2)}
+.step .body em{font-style:normal;color:var(--ok);font-size:12.5px}
+
+/* 思考/小测 */
+.quiz{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 15px;margin:16px 0}
+.quiz .qh{font-size:12px;color:var(--neg);font-weight:600;letter-spacing:1px;margin-bottom:4px}
+.quiz p{margin:4px 0;font-size:13.5px;color:var(--tx2)}
+.quiz b{color:var(--tx)}
+
+/* 误区 */
+.myth{background:var(--card);border:1px solid var(--line);border-left:3px solid var(--bound);
+  border-radius:0 10px 10px 0;padding:11px 15px;margin:12px 0}
+.myth .m{font-size:13.5px;color:var(--bound);font-weight:600}
+.myth .r{font-size:13.5px;color:var(--tx2);margin-top:3px}
+.myth .r b{color:var(--tx)}
+
+/* 底部导航 */
+.footnav{display:flex;justify-content:space-between;gap:12px;margin-top:44px;border-top:1px solid var(--line);padding-top:18px}
+.footnav a{font-size:13px;color:var(--pos);text-decoration:none;border:1px solid var(--line);
+  background:var(--card);border-radius:10px;padding:9px 15px;transition:.15s}
+.footnav a:hover{border-color:var(--pos)}
+.footnav a.ghost{color:var(--tx3)}
+.footnav a.ghost:hover{color:var(--pos)}
+.endnote{margin-top:26px;font-size:12px;color:var(--tx3);line-height:1.8}
+.endnote b{color:var(--tx2);font-weight:500}
+@media(max-width:640px){
+  h1{font-size:22px}
+  .nest .ring.r2{margin-left:12px}
+  .nest .ring.r3{margin-left:24px}
+}
+</style>
+</head>
+<body data-theme="dark">
+<div class="wrap">
+
+  <header>
+    <div>
+      <h1>AI 入门 · 从零到一的知识地图</h1>
+      <p class="sub">面向初学者的完整路径：先建立概念，再理解原理，最后动手看可视化</p>
+    </div>
+    <button class="themeBtn" id="themeBtn">切换浅色</button>
+  </header>
+
+  <nav class="toc">
+    <a href="#l0">起点</a>
+    <a href="#l1">① 什么是 AI</a>
+    <a href="#l2">② 机器怎么学</a>
+    <a href="#l3">③ 神经元到深度网络</a>
+    <a href="#l4">④ 注意力与大模型</a>
+    <a href="#l5">⑤ 发展历程</a>
+    <a href="#l6">⑥ 知识关联</a>
+    <a href="#l7">误区与下一步</a>
+  </nav>
+
+  <!-- L0 起点 -->
+  <section class="sec" id="l0">
+    <span class="lvl">L0 · 起点</span>
+    <h2>这张地图怎么用</h2>
+    <p class="lead">
+      整套材料分两类：<b>本文（地图与常识）</b>负责把概念讲清楚、把发展脉络串起来；
+      <b>三张可视化页（动手看原理）</b>负责让你亲眼看到「模型到底在算什么」。
+      建议按 <b>本文 → 感知机 → 自注意力 → 参数图鉴</b> 的顺序走一遍，再回来读本文的「知识关联」一节。
+    </p>
+    <p>
+      一句话总纲，记住它，后面所有内容都是这句的展开：
+      <b>AI 的本质，是让机器从数据里「学出」规则，而不是由人把规则写死。</b>
+    </p>
+    <div class="analogy">
+      <b>类比：</b>普通程序像一份写死的菜谱（第几步放多少盐，人定好）；
+      机器学习像一个学徒，先做一批菜、尝一口、发现咸了，下次少放一点——<b>规则是试出来的</b>。
+    </div>
+    <p class="muted">这条主线会反复出现，尤其在下一节「什么是 AI」和第 ② 节的「训练 = 猜错就改」里。</p>
+  </section>
+
+  <!-- L1 什么是 AI -->
+  <section class="sec" id="l1">
+    <span class="lvl">L1 · 入门</span>
+    <h2>什么是人工智能<span class="diff">难度：入门</span></h2>
+    <div class="pre"><b>前置：</b>无（从这里开始）。<span class="arrow">→</span> <b>本节引出：</b>「规则怎么学出来」这件事，就是后面一切的地基。</div>
+
+    <p>
+      <b>人工智能（AI）</b>是让机器完成「本来需要人的智能才能做」的任务的总称——识别图片、听懂语音、翻译、下棋、写文章，都算。
+      它不是一个具体技术，而是一个目标。实现这个目标的方法有很多，其中今天最主要的一条叫<b>机器学习</b>。
+    </p>
+
+    <h3 style="font-size:16px;margin:20px 0 6px">三个常被混用的词：AI ⊃ 机器学习 ⊃ 深度学习</h3>
+    <div class="nest">
+      <div class="ring r1">
+        <b>人工智能 AI</b>
+        <span>最大的圈：让机器表现出智能的一切方法，包括早期的「手写规则」专家系统。</span>
+        <div class="ring r2" style="margin-top:12px">
+          <b>机器学习 ML</b>
+          <span>不写死规则，而是给数据、让模型自己总结规律。是今天 AI 的主流做法。</span>
+          <div class="ring r3" style="margin-top:12px">
+            <b>深度学习 DL</b>
+            <span>机器学习的一种，用「多层神经网络」来学。近十年的大突破几乎都来自它。</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <p class="muted">记忆方法：AI 是「目标」，机器学习是「主流方法」，深度学习是「当下最有效的工具」。三者是包含关系，不是并列。</p>
+
+    <h3 style="font-size:16px;margin:20px 0 6px">弱 AI 与强 AI</h3>
+    <ul>
+      <li><b>弱 AI（专用 AI）：</b>只擅长一件事，比如只会下围棋、只会识别人脸。今天所有商用系统都是弱 AI。</li>
+      <li><b>强 AI（通用 AI / AGI）：</b>像人一样能迁移到任意任务。目前<b>尚未实现</b>，是长期研究目标。</li>
+    </ul>
+
+    <h3 style="font-size:16px;margin:20px 0 6px">AI 和普通程序，到底差在哪</h3>
+    <table class="tbl">
+      <tr><th></th><th>普通程序</th><th>机器学习</th></tr>
+      <tr><td><b>规则来源</b></td><td>程序员写好 if / else</td><td>从数据中自动「学」出来</td></tr>
+      <tr><td><b>遇到新情况</b></td><td>没写到的就错</td><td>能根据学到的规律做推断</td></tr>
+      <tr><td><b>改动方式</b></td><td>改代码</td><td>改数据 / 重新训练</td></tr>
+      <tr><td><b>典型例子</b></td><td>计算器</td><td>垃圾邮件分类、人脸识别</td></tr>
+    </table>
+    <p>这个区别，正是下一张页面「感知机」要亲手演示的：它不查表、不背答案，而是学出一条分界线。</p>
+    <div class="link"><span class="ico">🔗</span><div>看第一张可视化：<a href="perceptron_visual.html">感知机：会自己改错的最小 AI</a>——从全零权重出发，靠改错学出 OR 逻辑门。</div></div>
+
+    <div class="quiz">
+      <div class="qh">想一想</div>
+      <p><b>Q：</b>「一个只会识别猫的模型」属于弱 AI 还是强 AI？</p>
+      <p><b>A：</b>弱 AI。它只在一个任务上强，换到狗就未必行；强 AI 要求能像人一样迁移到任意任务。</p>
+    </div>
+  </section>
+
+  <!-- L2 机器怎么学 -->
+  <section class="sec" id="l2">
+    <span class="lvl">L2 · 基础</span>
+    <h2>机器是怎么「学」的<span class="diff">难度：基础 · 本节是全文的核心</span></h2>
+    <div class="pre"><b>前置：</b>L1「规则要学出来」。<span class="arrow">→</span> <b>本节引出：</b>参数、损失、梯度下降——理解这些，才看得懂感知机在改什么。</div>
+
+    <p>任何一次「学习」，都可以拆成三个要素：</p>
+    <ol>
+      <li><b>数据：</b>一堆例子（如图片 + 它是不是猫）。</li>
+      <li><b>模型：</b>一个带很多「可调旋钮」的函数，旋钮就是<b>参数</b>。</li>
+      <li><b>目标（损失）：</b>一把尺子，衡量「模型现在的答案离标准答案差多远」。</li>
+    </ol>
+    <p>训练的过程，就是<b>不断拧旋钮，让「差得远」变成「差得少」</b>。</p>
+    <div class="analogy">
+      <b>类比：</b>调淋浴水温。你不知道该拧多少，就先拧一下、手试温度、太冷往热拧、太热往冷拧。
+      「手试温度」= 算损失；「往哪边拧、拧多少」= 梯度下降。
+    </div>
+
+    <h3 style="font-size:16px;margin:22px 0 6px">① 参数 vs 超参数（最容易混的一对）</h3>
+    <table class="tbl">
+      <tr><th></th><th>参数</th><th>超参数</th></tr>
+      <tr><td><b>谁定</b></td><td>模型自己<b>学</b>出来</td><td>你开工<b>前</b>人定好</td></tr>
+      <tr><td><b>例子</b></td><td>权重 w、偏置 b</td><td>学习率 η、最大轮数、维度、温度</td></tr>
+      <tr><td><b>打比方</b></td><td>做菜时试出来的盐量</td><td>你事先定的火候档位</td></tr>
+    </table>
+    <p class="muted">一句话：<b>参数是学出来的，超参数是你定的。</b>本系列出现过 25 个参数，参数图鉴已逐一拆开。</p>
+    <div class="link"><span class="ico">🔗</span><div>查字典：<a href="params_guide.html">参数图鉴：25 个参数逐一讲</a>——分清「学出来的 / 人定的 / 只读的」三类。</div></div>
+
+    <h3 style="font-size:16px;margin:22px 0 6px">② 损失与梯度下降：怎么知道往哪拧</h3>
+    <p>
+      <b>损失（Loss）</b>是一个数字：预测越错，损失越大。训练就是想把这个数字压到最小。
+      <b>梯度下降</b>是最常用的办法——沿着「让损失下降最快的方向」小步移动。
+      步子太小（学习率很小）→ 学得慢；步子太大 → 可能越调越糟、来回震荡甚至发散。
+    </p>
+    <div class="analogy">
+      <b>类比：</b>下山。蒙着眼站在山坡上，用脚感受哪边更陡（梯度），就往低处迈一步（学习率决定步子大小）。
+      步子太大可能直接跨过山谷、冲到对面山坡上去。
+    </div>
+    <div class="link"><span class="ico">🔗</span><div>动手看：<a href="params_guide.html">参数图鉴的「两个实验」</a>——把学习率从 0.1 拨到 1.1，亲眼看到「收敛 / 震荡 / 发散」三种结局。</div></div>
+
+    <h3 style="font-size:16px;margin:22px 0 6px">③ 三种学习方式</h3>
+    <table class="tbl">
+      <tr><th>类型</th><th>有没有标准答案</th><th>典型任务</th></tr>
+      <tr><td><b>监督学习</b></td><td>有（数据带标签）</td><td>图像分类、房价预测、垃圾邮件识别</td></tr>
+      <tr><td><b>无监督学习</b></td><td>无（只有数据）</td><td>聚类分群、降维、找异常</td></tr>
+      <tr><td><b>强化学习</b></td><td>无标签，但有「奖励」</td><td>下棋、机器人控制、玩游戏</td></tr>
+    </table>
+    <p class="muted">本系列的感知机属于<b>监督学习</b>：每个样本都附了标准答案（0 或 1），模型靠「对答案」来改。</p>
+
+    <h3 style="font-size:16px;margin:22px 0 6px">④ 泛化与过拟合：学「会」还是学「死」</h3>
+    <p>
+      学习的目标不是把训练题做满分，而是<b>在新题上也做对</b>，这叫<b>泛化</b>。
+      如果一个模型把训练集背得滚瓜烂熟、换新数据就崩，叫<b>过拟合</b>——像学生死记答案却不懂原理。
+      所以要把数据分成<b>训练集</b>（用来学）和<b>测试集</b>（用来考，学的时候绝不给看）。
+    </p>
+    <div class="analogy">
+      <b>类比：</b>备考。只刷原题、背选项（过拟合），换一道变形题就废；真正理解了方法，才能举一反三（泛化）。
+    </div>
+
+    <div class="link"><span class="ico">🔗</span><div>回看地基：<a href="perceptron_visual.html">感知机可视化</a>里的「训练 = 猜错就改」，就是把「损失 + 梯度下降」简化到极致的版本。</div></div>
+  </section>
+
+  <!-- L3 神经元到深度网络 -->
+  <section class="sec" id="l3">
+    <span class="lvl">L3 · 进阶</span>
+    <h2>从一个神经元，到神经网络<span class="diff">难度：进阶</span></h2>
+    <div class="pre"><b>前置：</b>L2 的参数与损失。<span class="arrow">→</span> <b>本节引出：</b>单个神经元能力有限，加层、加非线性，才有「深度学习」。</div>
+
+    <p>
+      <b>感知机</b>是最小的神经元：把输入乘权重、加偏置、过一道阈值，输出 0 或 1。
+      它的几何意义很直白——<b>在平面上画一条直线，把两类点分开</b>。
+    </p>
+
+    <h3 style="font-size:16px;margin:20px 0 6px">它为什么学不会 XOR（关键转折点）</h3>
+    <p>
+      OR、AND 的点能用一条直线分开；但 XOR 的 0 和 1 <b>交叉分布像棋盘格</b>，任何一条直线都会切错。
+      单层感知机只会画直线，所以永远学不会 XOR——这是 1969 年 Minsky 与 Papert 的经典结论，
+      也把 AI 推入了第一次寒冬（见第 ⑤ 节）。
+    </p>
+    <div class="link"><span class="ico">🔗</span><div>亲眼见证：<a href="perceptron_visual.html">感知机可视化</a>切到 <b>XOR</b> 点「跑完」，误差柱子始终不归零，边界持续震荡。</div></div>
+
+    <h3 style="font-size:16px;margin:20px 0 6px">破局：加隐藏层 + 非线性</h3>
+    <p>
+      既然一条直线不够，那就用<b>多条直线组合</b>——先让若干神经元各自画一条线，再用一层新的神经元把它们「拼」起来。
+      这就是<b>多层感知机（MLP）</b>。关键是要有<b>非线性激活函数</b>（如 ReLU、Sigmoid），
+      否则多层叠加仍然等价于一条直线，白搭。
+    </p>
+    <div class="analogy">
+      <b>类比：</b>一个人只会画直线；但先派几个人各画一条，再由一个人把这些线的结论综合起来，就能围出「弯曲」的区域——这就是隐藏层在干的事。
+    </div>
+    <p>
+      「<b>深度</b>学习」的「深度」，指的就是这种<b>多层堆叠</b>。1986 年反向传播算法被广泛推广，
+      让「如何调整每一层的参数」有了可行方法，为后来的深度学习打下基础。
+    </p>
+    <div class="quiz">
+      <div class="qh">想一想</div>
+      <p><b>Q：</b>为什么加了隐藏层还不够，还要加「非线性」激活？</p>
+      <p><b>A：</b>因为「线性变换套线性变换」结果仍是线性变换。只有引入非线性，多层叠加才能真正画出弯曲的边界、解决 XOR。</p>
+    </div>
+  </section>
+
+  <!-- L4 注意力与大模型 -->
+  <section class="sec" id="l4">
+    <span class="lvl">L4 · 进阶</span>
+    <h2>让机器理解语言：注意力与大模型<span class="diff">难度：进阶</span></h2>
+    <div class="pre"><b>前置：</b>L3 的神经网络。<span class="arrow">→</span> <b>本节引出：</b>为什么 2017 年之后的「主流模型」，几乎都是 Transformer。</div>
+
+    <p>
+      处理语言，先要把词变成数字——<b>词向量（embedding）</b>：给每个词贴一组数字标签（是不是实体、是不是动作……）。
+      但光有词向量还不够，因为同一个词在不同句子里含义不同，需要结合上下文。
+    </p>
+
+    <h3 style="font-size:16px;margin:20px 0 6px">注意力机制：让词与词互相「打分」</h3>
+    <p>
+      <b>自注意力</b>的核心动作：让每个词环顾一圈，决定「我该听谁的、听多少」，再把别人的信息按比例记进自己的笔记。
+      具体用三个角色：<b>Q（查询）</b>是我的问题、<b>K（键）</b>是每个词挂的标签、<b>V（值）</b>是词的内容。
+      拿 Q 和每个 K 比对得到分数，<b>softmax</b> 把分数变成加起来 100% 的注意力，再用它对 V 加权求和。
+    </p>
+    <div class="analogy">
+      <b>类比：</b>开会。每个人轮流发言前，先环顾一圈：谁跟我这个话题最相关（Q 比 K），我就多听他的（注意力权重），把他的话按比例记进笔记（对 V 加权）。
+    </div>
+    <div class="link"><span class="ico">🔗</span><div>动手看：<a href="attention_visual.html">自注意力可视化</a>——热力图看「谁在看谁」，可调温度、开因果掩码、切多头。</div></div>
+
+    <h3 style="font-size:16px;margin:20px 0 6px">为什么 Transformer 成了主流</h3>
+    <ul>
+      <li><b>能并行：</b>所有位置同时计算，比逐词处理的旧模型（RNN）更适合 GPU 大规模加速。</li>
+      <li><b>长程依赖：</b>两个相隔很远的词也能直接「互相打分」，不像 RNN 要一步步传递、越远越弱。</li>
+      <li><b>可堆叠：</b>一层层堆起来，配合残差、归一化，能做得非常深、非常大。</li>
+    </ul>
+    <p>
+      2017 年论文《Attention Is All You Need》提出 Transformer，此后 GPT、BERT 等模型都建立在它之上。
+      大模型的通用套路是<b>「预训练 + 微调」</b>：先在海量文本上自学语言规律（预训练），再针对具体任务调一调（微调）。
+    </p>
+    <div class="quiz">
+      <div class="qh">想一想</div>
+      <p><b>Q：</b>为什么说「勾选随机权重后注意力变均匀」，能说明语义是训练出来的？</p>
+      <p><b>A：</b>因为未训练时各词权重差不多、没有偏向；训练后才明显偏向语义相关词。差异来自训练，而非架构天生就有。</p>
+    </div>
+  </section>
+
+  <!-- L5 发展历程 -->
+  <section class="sec" id="l5">
+    <span class="lvl">L5 · 了解</span>
+    <h2>AI 的发展历程：三次浪潮，两次寒冬<span class="diff">难度：了解 · 建立时间纵轴</span></h2>
+    <div class="pre"><b>前置：</b>前面所有概念。<span class="arrow">→</span> <b>本节引出：</b>把技术串成历史，理解「为什么现在才爆发」。</div>
+
+    <p>
+      AI 不是一条直线上升的路，而是「兴奋 → 失望 → 沉寂 → 再突破」的循环。
+      理解这段历史，你会明白今天的爆发不是偶然，而是<b>数据、算力、算法</b>三件事同时成熟的结果。
+    </p>
+
+    <div class="timeline">
+      <div class="tl">
+        <div class="year">1950</div>
+        <div class="t">图灵测试提出</div>
+        <div class="d">Alan Turing 发表《计算机器与智能》，提出「机器能思考吗」，并给出以对话判断智能的思想实验。</div>
+      </div>
+      <div class="tl">
+        <div class="year">1956 <span class="tag2 cool">AI 诞生</span></div>
+        <div class="t">达特茅斯会议</div>
+        <div class="d">John McCarthy、Marvin Minsky、Claude Shannon 等人在此会议上正式提出「Artificial Intelligence」一词，被视为 AI 学科的起点。</div>
+      </div>
+      <div class="tl">
+        <div class="year">1957–1958</div>
+        <div class="t">感知机问世</div>
+        <div class="d">Frank Rosenblatt 提出并实现感知机（Mark I），第一次让「机器从数据中学习」变得可操作，引发第一波热潮。</div>
+      </div>
+      <div class="tl era">
+        <div class="year">1969 <span class="tag2 warm">寒冬前奏</span></div>
+        <div class="t">Minsky &amp; Papert 指出感知机局限</div>
+        <div class="d">《Perceptrons》一书证明单层感知机连 XOR 都无法解决，浇下冷水，成为第一次寒冬的导火索。</div>
+      </div>
+      <div class="tl era">
+        <div class="year">1974–1980 <span class="tag2 warm">第一次寒冬</span></div>
+        <div class="t">期望落空，资金收缩</div>
+        <div class="d">早期承诺（机器翻译、通用问题求解）难以兑现，研究经费大幅削减。</div>
+      </div>
+      <div class="tl">
+        <div class="year">1980s <span class="tag2 cool">第二次浪潮</span></div>
+        <div class="t">专家系统兴起</div>
+        <div class="d">把专家知识写成规则（if–then）的系统在商业上短暂成功，日本启动第五代计算机计划，AI 再度升温。</div>
+      </div>
+      <div class="tl">
+        <div class="year">1986</div>
+        <div class="t">反向传播被广泛推广</div>
+        <div class="d">Rumelhart、Hinton、Williams 等让「多层网络如何调参」有了实用方法，为神经网络复兴奠基（更早可追溯到 Werbos 1974）。</div>
+      </div>
+      <div class="tl era">
+        <div class="year">1987–1993 <span class="tag2 warm">第二次寒冬</span></div>
+        <div class="t">专家系统维护成本过高</div>
+        <div class="d">规则难以维护、无法应对模糊现实，加上专用硬件市场崩溃，AI 再次进入低谷。</div>
+      </div>
+      <div class="tl">
+        <div class="year">1990s–2000s</div>
+        <div class="t">统计机器学习崛起</div>
+        <div class="d">以数据和概率为核心的方法成为主流（如支持向量机 SVM），AI 从「写规则」转向「从数据学」。1997 年 IBM 深蓝击败国际象棋世界冠军卡斯帕罗夫。</div>
+      </div>
+      <div class="tl">
+        <div class="year">2012 <span class="tag2 cool">深度学习爆发</span></div>
+        <div class="t">AlexNet 夺冠 ImageNet</div>
+        <div class="d">深层卷积网络在图像识别大赛上大幅领先，GPU 训练 + 大数据 + 深度网络三要素齐备，深度学习时代正式开启。</div>
+      </div>
+      <div class="tl">
+        <div class="year">2016</div>
+        <div class="t">AlphaGo 击败李世石</div>
+        <div class="d">深度强化学习在围棋这一人类智力高地取得突破，引发全球关注。</div>
+      </div>
+      <div class="tl">
+        <div class="year">2017 <span class="tag2 cool">架构转折</span></div>
+        <div class="t">Transformer 提出</div>
+        <div class="d">论文《Attention Is All You Need》用自注意力取代循环结构，成为此后几乎所有大模型的底座。</div>
+      </div>
+      <div class="tl">
+        <div class="year">2018–2020</div>
+        <div class="t">预训练大模型时代</div>
+        <div class="d">GPT、BERT 确立「预训练 + 微调」范式；GPT-3（2020）以千亿级参数展示出强大的通用语言能力。</div>
+      </div>
+      <div class="tl">
+        <div class="year">2022 <span class="tag2 cool">走进大众</span></div>
+        <div class="t">ChatGPT 发布</div>
+        <div class="d">对话式大模型让普通人第一次直接用到强 AI 能力，生成式 AI 迅速普及。</div>
+      </div>
+      <div class="tl">
+        <div class="year">2023 至今</div>
+        <div class="t">多模态与智能体</div>
+        <div class="d">模型从「只会文字」扩展到图像、语音、视频（多模态），并开始作为「智能体」调用工具完成任务。技术仍在快速演进中。</div>
+      </div>
+    </div>
+
+    <p style="margin-top:18px">
+      <b>规律总结：</b>两次寒冬的根源都是「<b>期望过高 + 落地不足</b>」；而近十年的爆发，靠的是三件事同时到位——
+      <b>数据</b>（互联网带来海量样本）、<b>算力</b>（GPU 大幅提速）、<b>算法</b>（深度网络、Transformer 等）。
+    </p>
+  </section>
+
+  <!-- L6 知识关联 -->
+  <section class="sec" id="l6">
+    <span class="lvl">L6 · 串联</span>
+    <h2>知识关联图：一条线看懂全貌<span class="diff">难度：回顾</span></h2>
+    <div class="pre"><b>前置：</b>L1–L5。<span class="arrow">→</span> <b>本节作用：</b>把散点串成一条「从概念到动手」的路径。</div>
+
+    <div class="ladder">
+      <div class="step">
+        <div class="dot">1</div>
+        <div class="body"><b>AI 是目标：让机器表现出智能</b><span>实现方法里最重要的是机器学习；深度学习是当下最强的工具。</span><em>→ 对应本文 L1</em></div>
+      </div>
+      <div class="step">
+        <div class="dot">2</div>
+        <div class="body"><b>学习 = 数据 + 模型 + 目标（损失）</b><span>参数由模型学出，超参数由人设定；靠梯度下降把损失压小。</span><em>→ 对应本文 L2 / 参数图鉴</em></div>
+      </div>
+      <div class="step">
+        <div class="dot">3</div>
+        <div class="body"><b>最小模型：感知机画一条直线</b><span>能解 OR / AND，解不了 XOR（线性不可分）。</span><em>→ 对应 感知机可视化</em></div>
+      </div>
+      <div class="step">
+        <div class="dot">4</div>
+        <div class="body"><b>加隐藏层 + 非线性 → 多层网络</b><span>多条直线组合，才能画出弯曲边界；反向传播负责调每一层。</span><em>→ 感知机可视化（XOR 对照）</em></div>
+      </div>
+      <div class="step">
+        <div class="dot">5</div>
+        <div class="body"><b>处理语言：词向量 + 自注意力</b><span>Q/K/V 打分、softmax 归一、加权求和得新表示。</span><em>→ 对应 自注意力可视化</em></div>
+      </div>
+      <div class="step">
+        <div class="dot">6</div>
+        <div class="body"><b>Transformer → 预训练大模型</b><span>可并行、长程依赖、可堆叠，成就 GPT 等大模型。</span><em>→ 对应 自注意力可视化 / 本文 L4</em></div>
+      </div>
+      <div class="step">
+        <div class="dot">7</div>
+        <div class="body"><b>历史验证：三浪潮两寒冬，靠数据·算力·算法</b><span>每次突破都建立在前一步的方法之上。</span><em>→ 对应本文 L5</em></div>
+      </div>
+    </div>
+    <p class="muted">按这个顺序点开三张可视化，你会发现：第 3 步是「一个神经元」，第 5 步是「让词互相打分」——它们原理不同，但共同点只有一个，却最关键：<b>规则由数据学出，而非人写死。</b></p>
+  </section>
+
+  <!-- L7 误区 -->
+  <section class="sec" id="l7">
+    <span class="lvl">L7 · 收尾</span>
+    <h2>常见误区与下一步<span class="diff">难度：回顾</span></h2>
+
+    <div class="myth"><div class="m">误区 1：AI 就是大模型 / ChatGPT</div><div class="r">不对。<b>大模型只是 AI 里的一个分支</b>（基于 Transformer 的深度学习）。决策树、SVM、强化学习等都属于 AI。</div></div>
+    <div class="myth"><div class="m">误区 2：数据越多，模型一定越好</div><div class="r">不一定，<b>数据质量与代表性更关键</b>。垃圾数据喂再多也是垃圾；而且过多无关数据还可能带来噪声与过拟合风险。</div></div>
+    <div class="myth"><div class="m">误区 3：训练集准确率高 = 模型好</div><div class="r">恰恰相反，<b>训练集满分而测试集崩，就是过拟合</b>。真正看的是在新数据上的<b>泛化</b>能力。</div></div>
+    <div class="myth"><div class="m">误区 4：AI 真的「理解」了</div><div class="r">今天的模型擅长<b>从数据中找规律</b>，但并不能像人一样真正「理解」意义。对它的输出要保持判断，尤其别把它当绝对真理。</div></div>
+    <div class="myth"><div class="m">误区 5：注意力权重 = 因果解释</div><div class="r">不能。<b>权重只是「注意力预算怎么分」</b>，不是「这个词有多重要」的绝对分数，更不是因果推理。</div></div>
+
+    <h3 style="font-size:16px;margin:24px 0 8px">下一步：按顺序动手</h3>
+    <ol>
+      <li><b>感知机可视化</b>：自动播放看红线怎么移动、柱子怎么降到 0；再切 XOR 看它学不会。</li>
+      <li><b>自注意力可视化</b>：只看颜色深浅与弧线粗细，切 Head1/Head2、开因果掩码、勾随机权重。</li>
+      <li><b>参数图鉴</b>：按名词查，玩「学习率」与「温度」两个实验。</li>
+      <li>回到本文 L6 的知识关联图，把「概念 → 原理 → 可视化」串成一条线。</li>
+    </ol>
+    <p class="muted">右下角的「AI」按钮可以随时提问（本地版，答案来自本教程内容）。</p>
+  </section>
+
+  <div class="footnav">
+    <a class="ghost" href="index.html">← 返回首页</a>
+    <a href="perceptron_visual.html">下一步：感知机可视化 →</a>
+  </div>
+
+  <p class="endnote">
+    <b>说明：</b>本文用于建立概念与历史脉络，力求准确但会随时间演进（尤其 2023 年后的进展日新月异）。
+    文中涉及的模型数值与可视化细节，均为教学演示，部分数据为手工设定，非真实训练所得；具体请以对应可视化页的标注为准。
+  </p>
+
+</div>
+
+<script>
+document.getElementById("themeBtn").addEventListener("click", function(){
+  var b = document.body;
+  var dark = b.getAttribute("data-theme") === "dark";
+  b.setAttribute("data-theme", dark ? "light" : "dark");
+  this.textContent = dark ? "切换深色" : "切换浅色";
+});
+</script>
+<script src="ai_helper.js"></script>
+</body>
+</html>

@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>感知机训练可视化</title>
+<style>
+:root{
+  --bg:#f7f7f5; --card:#ffffff; --line:#e4e4df; --line2:#c9c9c2;
+  --tx:#1c1c1a; --tx2:#6b6b64; --tx3:#96968e;
+  --pos:#185fa5; --neg:#ba7517; --bound:#a32d2d; --ok:#1d9e75;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--tx);
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Microsoft YaHei",sans-serif;
+  font-size:13px;line-height:1.6}
+.wrap{max-width:1000px;margin:0 auto;padding:28px 20px 40px}
+h1{font-size:19px;font-weight:500;margin:0 0 4px}
+h2{font-size:13px;font-weight:500;margin:0 0 12px;color:var(--tx2)}
+.sub{color:var(--tx2);margin:0 0 20px;font-size:13px}
+.controls{display:flex;flex-wrap:wrap;gap:12px 24px;align-items:center;
+  background:var(--card);border:1px solid var(--line);border-radius:12px;
+  padding:14px 16px;margin-bottom:16px}
+.group{display:flex;align-items:center;gap:8px}
+.label{color:var(--tx2);font-size:12px;margin-right:2px}
+button{font:inherit;font-size:12px;padding:6px 12px;border:1px solid var(--line2);
+  background:var(--card);color:var(--tx);border-radius:7px;cursor:pointer}
+button:hover{border-color:var(--pos);color:var(--pos)}
+button:disabled{opacity:.45;cursor:not-allowed;border-color:var(--line);color:var(--tx2)}
+button.active{background:var(--pos);border-color:var(--pos);color:#fff}
+.seg{display:flex;gap:0}
+.seg button{border-radius:0;margin-left:-1px}
+.seg button:first-child{border-radius:7px 0 0 7px}
+.seg button:last-child{border-radius:0 7px 7px 0}
+input[type=range]{width:110px;accent-color:var(--pos)}
+#speedVal{color:var(--tx2);font-size:12px;min-width:52px;font-variant-numeric:tabular-nums}
+.layout{display:grid;grid-template-columns:460px minmax(0,1fr);gap:16px;align-items:start}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px;margin-bottom:16px}
+.side .card:last-child{margin-bottom:0}
+canvas{display:block;width:100%;height:auto;max-width:440px}
+.legend{display:flex;flex-wrap:wrap;gap:8px 16px;margin-top:10px;color:var(--tx2);font-size:12px}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:5px;vertical-align:-1px}
+.badge{display:inline-block;padding:2px 9px;border-radius:20px;font-size:12px;
+  background:#f0efeb;color:var(--tx2);margin-bottom:10px}
+.badge.ok{background:#e1f5ee;color:var(--ok)}
+.badge.warn{background:#faeeda;color:var(--neg)}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:6px 14px;font-size:12px}
+.kv span{color:var(--tx2)}
+.kv b{font-weight:500;font-variant-numeric:tabular-nums;text-align:right;
+  font-family:ui-monospace,Consolas,"Courier New",monospace}
+.note{font-size:12px;color:var(--tx2);margin:10px 0 0;min-height:18px}
+.log{max-height:172px;overflow:auto;font-size:11.5px;line-height:1.75;
+  font-family:ui-monospace,Consolas,"Courier New",monospace;color:var(--tx2)}
+.log div{border-bottom:1px solid #f2f2ee;padding:2px 0}
+.log .empty{color:var(--tx3);border:0}
+.hint{margin-top:18px;padding:14px 16px;border-left:2px solid var(--line2);
+  color:var(--tx2);font-size:12px;background:var(--card);border-radius:0 8px 8px 0}
+.hint b{font-weight:500;color:var(--tx)}
+code{font-family:ui-monospace,Consolas,"Courier New",monospace}
+@media(max-width:900px){.layout{grid-template-columns:1fr}}
+.guide{background:var(--card);border:1px solid #b5d4f4;border-radius:12px;margin-bottom:16px;overflow:hidden}
+.guide>summary{list-style:none;cursor:pointer;padding:11px 16px;background:#e6f1fb;display:flex;align-items:center;justify-content:space-between;gap:10px}
+.guide>summary::-webkit-details-marker{display:none}
+.guide>summary b{font-size:13px;font-weight:500;color:var(--pos)}
+.guide>summary span{font-size:11px;color:var(--tx2);white-space:nowrap}
+.guide-body{padding:14px 16px 16px;display:grid;grid-template-columns:1fr 1fr;gap:10px 22px}
+.guide h3{font-size:12px;font-weight:500;margin:12px 0 5px;color:var(--tx)}
+.guide h3:first-child{margin-top:0}
+.guide p,.guide li{font-size:12px;color:var(--tx2);line-height:1.8;margin:0 0 4px}
+.guide ol,.guide ul{padding-left:18px;margin:0}
+.guide b{color:var(--tx);font-weight:500}
+.guide code{font-size:11px}
+.term{display:grid;grid-template-columns:82px 1fr;gap:3px 10px;font-size:12px;line-height:1.7}
+.term dt{color:var(--pos);font-family:ui-monospace,Consolas,monospace}
+.term dd{margin:0;color:var(--tx2)}
+.mini{font-size:11px;color:var(--tx3);font-weight:400;margin-left:8px}
+.qa{margin-top:16px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 16px}
+.qa h2{margin-bottom:8px}
+.qa p{font-size:12px;color:var(--tx2);margin:0 0 7px;line-height:1.75}
+.qa p:last-child{margin-bottom:0}
+.qa b{color:var(--tx);font-weight:500}
+.lead{font-size:13px;line-height:1.85;color:var(--tx);background:#f4f8fd;border-left:3px solid var(--pos);padding:9px 12px;border-radius:0 6px 6px 0;margin:0 0 10px}
+@media(max-width:900px){.guide-body{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>感知机训练可视化</h1>
+  <p class="sub">观察权重如何被预测误差逐步修正、决策边界如何移动，以及线性不可分时的收敛失败。</p>
+
+  <div class="controls">
+    <div class="group">
+      <span class="label">数据集</span>
+      <div class="seg" id="dsBtns">
+        <button data-ds="OR" class="active">OR</button>
+        <button data-ds="AND">AND</button>
+        <button data-ds="XOR">XOR</button>
+      </div>
+    </div>
+    <div class="group">
+      <span class="label">训练</span>
+      <button id="step">单步</button>
+      <button id="play">自动播放</button>
+      <button id="runall">跑完</button>
+      <button id="reset">重置</button>
+    </div>
+    <div class="group">
+      <span class="label">速度</span>
+      <input type="range" id="speed" min="40" max="600" step="20" value="160">
+      <span id="speedVal">160 ms</span>
+    </div>
+  </div>
+
+  <details class="guide" open>
+    <summary><b>先看这里 · 零基础导读</b><span>点击可收起 / 展开</span></summary>
+    <div class="guide-body">
+      <div>
+        <h3>先记住这一句</h3>
+        <p class="lead">这个 AI 做的事只有一件：<b>猜错了就改一点点，改到全对为止</b>。像调淋浴水温——太冷往热拧一点，太热往冷拧一点，直到刚好。没有人告诉它「OR 门的规则」，它是自己从 4 道例题里试出来的。</p>
+        <h3>这张图怎么看</h3>
+        <ul>
+          <li>四个点是 4 道例题：<b>蓝点</b>标准答案是 1，<b>琥珀点</b>标准答案是 0。</li>
+          <li>整片浅色是模型<b>当前认为</b>该判 1 还是判 0 的地盘；红线是两片地盘的分界。</li>
+          <li>训练过程其实就是<b>这条红线在一点点挪位置</b>，直到把点分对。</li>
+          <li>柱状图每根柱子 = 一轮里「改了几次参数」，<b>降到 0 就是学会了</b>。</li>
+        </ul>
+        <h3>建议按这个顺序点一遍</h3>
+        <ol>
+          <li>保持 OR，点「自动播放」：看红线怎样挪到 <code>x1 + x2 = 1</code>。</li>
+          <li>点「重置」再点几次「单步」：看它每次只改很小一点，不是一步到位。</li>
+          <li>切到 XOR，点「跑完」：柱子永远不归零——它学不会。</li>
+          <li>回 OR，把速度调慢再自动播放，对照右侧日志里每次权重的变化。</li>
+        </ol>
+      </div>
+      <div>
+        <h3>术语白话对照</h3>
+        <dl class="term">
+          <dt>样本</dt><dd>一道例题：给一个输入，附一个标准答案。</dd>
+          <dt>权重 w</dt><dd>每个输入有多重要。这是模型<b>唯一学到的东西</b>。</dd>
+          <dt>偏置 b</dt><dd>整体门槛，像及格线高低。</dd>
+          <dt>学习率 η</dt><dd>每次改多大的步子。0.1 表示每次只挪一小步，稳但慢。</dd>
+          <dt>误差 d</dt><dd>猜对是 0；猜错是 +1 或 −1，告诉模型该往哪边改。</dd>
+          <dt>阶跃激活</dt><dd>把算出来的数一刀切成 0 或 1 的开关。</dd>
+          <dt>决策边界</dt><dd>那条红线，两片地盘的分界线。</dd>
+          <dt>收敛</dt><dd>一整轮下来一次都不用改了，说明学会了。</dd>
+          <dt>线性可分</dt><dd>能不能用<b>一条直线</b>把两类点干净地分开。</dd>
+        </dl>
+        <h3>为什么 XOR 学不会</h3>
+        <p>OR、AND 的点能用一条直线分开；XOR 的 0 和 1 <b>交叉分布像棋盘格</b>，直线怎么摆都会切错。单层感知机只会画直线，所以永远学不会。这正是后来人们加「隐藏层」的原因——多层才能画出弯的边界。</p>
+        <h3>后面的自注意力和它什么关系</h3>
+        <p>感知机是<b>一个神经元</b>；Transformer 里的自注意力是<b>让词与词互相打分</b>。两者共同点只有一个，却最关键：参数由数据改出来，而不是人写死规则。</p>
+      </div>
+    </div>
+  </details>
+
+  <div class="layout">
+    <section class="card">
+      <h2>决策平面（x1, x2）<span class="mini">红线会随训练移动</span></h2>
+      <canvas id="plane"></canvas>
+      <div class="legend">
+        <span><i style="background:var(--pos)"></i>正类 y=1</span>
+        <span><i style="background:var(--neg)"></i>负类 y=0</span>
+        <span><i style="background:var(--bound);border-radius:1px;height:3px"></i>决策边界</span>
+        <span>浅色区域 = 模型判为 1 / 0 的范围</span>
+      </div>
+      <p class="note" id="note"></p>
+    </section>
+
+    <aside class="side">
+      <section class="card">
+        <h2>当前状态<span class="mini">模型此刻学到的参数</span></h2>
+        <div class="badge" id="badge">训练中</div>
+        <div class="kv" id="kv"></div>
+      </section>
+      <section class="card">
+        <h2>每轮修正次数（误差曲线）<span class="mini">降到 0 就是学会了</span></h2>
+        <canvas id="chart"></canvas>
+      </section>
+      <section class="card">
+        <h2>权重更新日志<span class="mini">每一次「猜错 → 改」的记录</span></h2>
+        <div class="log" id="log"></div>
+      </section>
+    </aside>
+  </div>
+
+  <p class="hint">
+    <b>算法</b>：<code>z = w·x + b</code>，<code>ŷ = 1 if z ≥ 0 else 0</code>；
+    预测错误时按 <code>w ← w + η·d·x</code>、<code>b ← b + η·d</code> 修正，其中 <code>d = y − ŷ</code>、学习率 <code>η = 0.1</code>。
+    单步 = 处理一个样本；本轮全部样本无修正即收敛。<br>
+    <b>OR / AND</b> 线性可分，误差会在有限轮内归零；
+    <b>XOR</b> 线性不可分，任何直线都无法分开四类点，误差持续振荡、永不归零——这正是单层感知机的能力边界。
+    快捷键：空格 = 单步。
+  </p>
+
+  <div class="qa">
+    <h2>常见疑问</h2>
+    <p><b>Q：它是不是把 4 道题背下来了？</b><br>不是。程序里用训练集之外的点做了推断，它靠学到的红线判断，而不是查表。这正是「学习」和「背诵」的区别。</p>
+    <p><b>Q：为什么一开始全猜错？</b><br>初始权重是 0，等于完全没想法。它从零开始试错，这反而说明规则是学出来的。</p>
+    <p><b>Q：改了 4 轮才算学会，是不是很笨？</b><br>这里只有 4 道题、2 个参数，4 轮已经很快了。真实模型有几十亿个参数、海量数据，靠的是同样的「猜错就改」原理，只是放大了规模。</p>
+    <p><b>Q：公式看不懂怎么办？</b><br>先只盯两样东西：红线怎么动、柱子有没有降到 0。理解这两点，再回来看公式就容易了。</p>
+  </div>
+</div>
+
+<script>
+const LR = 0.1;
+const MAX_EPOCHS = 30;
+const MIN = -0.4, MAX = 1.4;
+const PAD = 36, SIZE = 440;
+const CW = 440, CH = 180, CL = 34, CR = 12, CT = 12, CB = 26;
+
+const DATASETS = {
+  OR:  {y:[0,1,1,1], note:'OR：线性可分，4 轮收敛。'},
+  AND: {y:[0,0,0,1], note:'AND：线性可分，4 轮收敛。'},
+  XOR: {y:[0,1,1,0], note:'XOR：线性不可分，误差不会归零，将在第 30 轮停止。'}
+};
+const X = [[0,0],[0,1],[1,0],[1,1]];
+
+const planeEl = document.getElementById('plane');
+const chartEl = document.getElementById('chart');
+const badgeEl = document.getElementById('badge');
+const kvEl    = document.getElementById('kv');
+const logEl   = document.getElementById('log');
+const noteEl  = document.getElementById('note');
+const playBtn = document.getElementById('play');
+const speedEl = document.getElementById('speed');
+const speedVal= document.getElementById('speedVal');
+
+function setupCanvas(c, w, h){
+  const dpr = window.devicePixelRatio || 1;
+  c.width = w * dpr; c.height = h * dpr;
+  c.style.aspectRatio = w + ' / ' + h;
+  const ctx = c.getContext('2d');
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  return ctx;
+}
+const pctx = setupCanvas(planeEl, SIZE, SIZE);
+const cctx = setupCanvas(chartEl, CW, CH);
+
+let s, timer = null;
+
+function init(ds){
+  stopPlay();
+  s = {ds, y:DATASETS[ds].y, w:[0,0], b:0, epoch:1, idx:0, errors:0,
+       history:[], updates:0, done:false, converged:false, log:[], last:null};
+  noteEl.textContent = DATASETS[ds].note;
+  render();
+}
+
+function predict(x){
+  return (s.w[0]*x[0] + s.w[1]*x[1] + s.b >= 0) ? 1 : 0;
+}
+const f2 = v => (Math.abs(v) < 1e-10 ? 0 : v).toFixed(2);
+const fw = () => '[' + f2(s.w[0]) + ', ' + f2(s.w[1]) + ']';
+
+function pushLog(txt){
+  s.log.unshift(txt);
+  if(s.log.length > 60) s.log.pop();
+}
+
+function step(doRender){
+  if(s.done) return false;
+  const x = X[s.idx], t = s.y[s.idx];
+  const p = predict(x), d = t - p;
+  if(d !== 0){
+    s.w = [s.w[0] + LR*d*x[0], s.w[1] + LR*d*x[1]];
+    s.b += LR*d;
+    s.errors++; s.updates++;
+    pushLog('第 ' + s.epoch + ' 轮 · x=[' + x + '] · 预测 ' + p + ' / 真实 ' + t +
+            ' · d=' + (d>0?'+':'') + d + ' · w=' + fw() + ' b=' + f2(s.b));
+  }
+  s.last = {x, p, d};
+  s.idx++;
+  if(s.idx >= X.length){
+    s.history.push(s.errors);
+    s.idx = 0;
+    if(s.errors === 0){
+      s.done = true; s.converged = true;
+      pushLog('第 ' + s.epoch + ' 轮：修正 0 次 → 收敛');
+    } else if(s.epoch >= MAX_EPOCHS){
+      s.done = true; s.converged = false;
+      pushLog('达到上限 ' + MAX_EPOCHS + ' 轮，仍未收敛');
+    } else {
+      s.epoch++; s.errors = 0;
+    }
+  }
+  if(doRender !== false) render();
+  return true;
+}
+
+function stopPlay(){
+  if(timer){ clearInterval(timer); timer = null; }
+  playBtn.textContent = '自动播放';
+}
+function togglePlay(){
+  if(timer){ stopPlay(); return; }
+  if(s.done) return;
+  playBtn.textContent = '暂停';
+  timer = setInterval(function(){
+    if(!step(true)) stopPlay();
+  }, Number(speedEl.value));
+}
+function runAll(){
+  stopPlay();
+  let guard = 0;
+  while(!s.done && guard++ < 10000) step(false);
+  render();
+}
+
+function toPx(x1, x2){
+  const u = SIZE - 2*PAD;
+  return [PAD + (x1-MIN)/(MAX-MIN)*u, PAD + (MAX-x2)/(MAX-MIN)*u];
+}
+function toLogic(px, py){
+  const u = SIZE - 2*PAD;
+  return [MIN + (px-PAD)/u*(MAX-MIN), MAX - (py-PAD)/u*(MAX-MIN)];
+}
+
+function boundary(){
+  if(Math.hypot(s.w[0], s.w[1]) < 1e-10) return null;
+  const [a,c] = s.w, b = s.b, pts = [];
+  function edgeX(v){
+    if(Math.abs(c) < 1e-12) return;
+    const x2 = -(a*v + b)/c;
+    if(x2 >= MIN-1e-9 && x2 <= MAX+1e-9) pts.push([v, x2]);
+  }
+  function edgeY(v){
+    if(Math.abs(a) < 1e-12) return;
+    const x1 = -(c*v + b)/a;
+    if(x1 >= MIN-1e-9 && x1 <= MAX+1e-9) pts.push([x1, v]);
+  }
+  edgeX(MIN); edgeX(MAX); edgeY(MIN); edgeY(MAX);
+  const uniq = [];
+  for(const p of pts){
+    if(!uniq.some(q => Math.hypot(q[0]-p[0], q[1]-p[1]) < 1e-6)) uniq.push(p);
+  }
+  return uniq.length >= 2 ? [uniq[0], uniq[1]] : null;
+}
+
+function drawPlane(){
+  pctx.clearRect(0, 0, SIZE, SIZE);
+  pctx.fillStyle = '#fcfcfb';
+  pctx.fillRect(PAD, PAD, SIZE-2*PAD, SIZE-2*PAD);
+
+  if(Math.hypot(s.w[0], s.w[1]) >= 1e-10){
+    const n = 44, cell = (SIZE-2*PAD)/n;
+    for(let i=0;i<n;i++) for(let j=0;j<n;j++){
+      const lg = toLogic(PAD+i*cell+cell/2, PAD+j*cell+cell/2);
+      const z = s.w[0]*lg[0] + s.w[1]*lg[1] + s.b;
+      pctx.fillStyle = z >= 0 ? 'rgba(24,95,165,0.075)' : 'rgba(186,117,23,0.075)';
+      pctx.fillRect(PAD+i*cell, PAD+j*cell, cell+0.6, cell+0.6);
+    }
+  }
+
+  pctx.strokeStyle = '#ecece7'; pctx.lineWidth = 1;
+  for(const v of [-0.4, 0, 0.5, 1, 1.4]){
+    const px = toPx(v, 0)[0], py = toPx(0, v)[1];
+    pctx.beginPath(); pctx.moveTo(px, PAD); pctx.lineTo(px, SIZE-PAD); pctx.stroke();
+    pctx.beginPath(); pctx.moveTo(PAD, py); pctx.lineTo(SIZE-PAD, py); pctx.stroke();
+  }
+  pctx.strokeStyle = '#b9b9b1'; pctx.lineWidth = 1.2;
+  pctx.strokeRect(PAD, PAD, SIZE-2*PAD, SIZE-2*PAD);
+  pctx.fillStyle = '#96968e'; pctx.font = '11px sans-serif';
+  pctx.textAlign = 'center';
+  for(const v of [0, 1]) pctx.fillText(String(v), toPx(v,0)[0], SIZE-PAD+16);
+  pctx.textAlign = 'right';
+  for(const v of [0, 1]) pctx.fillText(String(v), PAD-7, toPx(0,v)[1]+4);
+  pctx.textAlign = 'left';
+  pctx.fillText('x1', SIZE-PAD-14, SIZE-PAD+16);
+  pctx.fillText('x2', PAD-8, PAD-10);
+
+  const seg = boundary();
+  if(seg){
+    const p1 = toPx(seg[0][0], seg[0][1]), p2 = toPx(seg[1][0], seg[1][1]);
+    pctx.strokeStyle = '#a32d2d'; pctx.lineWidth = 2.2;
+    pctx.beginPath(); pctx.moveTo(p1[0], p1[1]); pctx.lineTo(p2[0], p2[1]); pctx.stroke();
+  }
+
+  X.forEach(function(x, i){
+    const c = toPx(x[0], x[1]);
+    const pos = s.y[i] === 1;
+    if(s.last && s.last.x === x && !s.done){
+      pctx.beginPath(); pctx.arc(c[0], c[1], 13, 0, Math.PI*2);
+      pctx.strokeStyle = '#a32d2d'; pctx.lineWidth = 1;
+      pctx.setLineDash([3,3]); pctx.stroke(); pctx.setLineDash([]);
+    }
+    pctx.beginPath(); pctx.arc(c[0], c[1], 7, 0, Math.PI*2);
+    pctx.fillStyle = pos ? '#185fa5' : '#ba7517';
+    pctx.fill();
+    pctx.strokeStyle = '#fff'; pctx.lineWidth = 2; pctx.stroke();
+    pctx.fillStyle = '#6b6b64'; pctx.font = '11px ui-monospace, monospace';
+    pctx.textAlign = 'left';
+    pctx.fillText('[' + x + ']', c[0] + 11, c[1] - 8);
+  });
+}
+
+function drawChart(){
+  cctx.clearRect(0, 0, CW, CH);
+  const pw = CW-CL-CR, ph = CH-CT-CB, maxE = 4;
+  cctx.fillStyle = '#fcfcfb';
+  cctx.fillRect(CL, CT, pw, ph);
+  cctx.strokeStyle = '#e4e4df'; cctx.lineWidth = 1;
+  for(let e=0;e<=maxE;e++){
+    const y = CT + ph - e/maxE*ph;
+    cctx.beginPath(); cctx.moveTo(CL, y); cctx.lineTo(CW-CR, y); cctx.stroke();
+    cctx.fillStyle = '#96968e'; cctx.font = '10px sans-serif'; cctx.textAlign = 'right';
+    cctx.fillText(String(e), CL-6, y+3);
+  }
+  cctx.strokeStyle = '#c9c9c2'; cctx.lineWidth = 1.2;
+  cctx.beginPath(); cctx.moveTo(CL, CT); cctx.lineTo(CL, CT+ph); cctx.lineTo(CW-CR, CT+ph); cctx.stroke();
+
+  const h = s.history;
+  if(!h.length){
+    cctx.fillStyle = '#96968e'; cctx.font = '11px sans-serif'; cctx.textAlign = 'center';
+    cctx.fillText('完成第 1 轮后显示', CL+pw/2, CT+ph/2);
+  } else {
+    const bw = Math.min(20, pw/h.length - 2);
+    h.forEach(function(v, i){
+      const cx = CL + (i+0.5)*pw/h.length;
+      const bh = v/maxE*ph;
+      cctx.fillStyle = v === 0 ? '#1d9e75' : (s.ds === 'XOR' ? '#ba7517' : '#185fa5');
+      cctx.fillRect(cx-bw/2, CT+ph-bh, bw, bh);
+      if(v > 0 && bw >= 12){
+        cctx.fillStyle = '#6b6b64'; cctx.font = '10px sans-serif'; cctx.textAlign = 'center';
+        cctx.fillText(String(v), cx, CT+ph-bh-3);
+      }
+    });
+    cctx.fillStyle = '#96968e'; cctx.font = '10px sans-serif'; cctx.textAlign = 'center';
+    cctx.fillText('轮次 epoch  (1 – ' + h.length + ')', CL+pw/2, CH-6);
+  }
+}
+
+function render(){
+  badgeEl.className = 'badge' + (s.done ? (s.converged ? ' ok' : ' warn') : '');
+  badgeEl.textContent = s.done
+    ? (s.converged ? '已收敛 · 第 ' + s.history.length + ' 轮' : '未收敛 · 线性不可分')
+    : '训练中 · 第 ' + s.epoch + ' 轮';
+
+  const eq = f2(s.w[0]) + '·x1 + ' + f2(s.w[1]) + '·x2 + (' + f2(s.b) + ') = 0';
+  kvEl.innerHTML =
+    '<span>权重 w</span><b>' + fw() + '</b>' +
+    '<span>偏置 b</span><b>' + f2(s.b) + '</b>' +
+    '<span>决策边界</span><b>' + eq + '</b>' +
+    '<span>本轮修正</span><b>' + s.errors + '</b>' +
+    '<span>累计更新</span><b>' + s.updates + '</b>' +
+    '<span>学习率 η</span><b>' + LR + '</b>';
+
+  logEl.innerHTML = s.log.length
+    ? s.log.slice(0, 12).map(function(t){ return '<div>' + t + '</div>'; }).join('')
+    : '<div class="empty">点击「单步」或「自动播放」开始训练</div>';
+
+  document.getElementById('step').disabled = s.done;
+  document.getElementById('runall').disabled = s.done;
+  playBtn.disabled = s.done;
+  drawPlane();
+  drawChart();
+}
+
+document.getElementById('dsBtns').addEventListener('click', function(e){
+  const btn = e.target.closest('button[data-ds]');
+  if(!btn) return;
+  Array.prototype.forEach.call(this.querySelectorAll('button'), function(b){
+    b.classList.toggle('active', b === btn);
+  });
+  init(btn.dataset.ds);
+});
+document.getElementById('step').addEventListener('click', function(){ stopPlay(); step(true); });
+document.getElementById('play').addEventListener('click', togglePlay);
+document.getElementById('runall').addEventListener('click', runAll);
+document.getElementById('reset').addEventListener('click', function(){ init(s.ds); });
+speedEl.addEventListener('input', function(){
+  speedVal.textContent = this.value + ' ms';
+  if(timer){ stopPlay(); togglePlay(); }
+});
+document.addEventListener('keydown', function(e){
+  if(e.code === 'Space' && e.target.tagName !== 'INPUT'){
+    e.preventDefault(); stopPlay(); step(true);
+  }
+});
+
+init('OR');
+</script>
+<script src="ai_helper.js"></script>
+</body>
+</html>
