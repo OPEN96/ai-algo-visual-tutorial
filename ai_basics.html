@@ -76,6 +76,8 @@ b{color:var(--tx);font-weight:600}
 .tbl th{background:var(--card2);color:var(--tx);font-weight:600;font-size:13px}
 .tbl td{color:var(--tx2)}
 .tbl td b{color:var(--tx)}
+code{font-family:ui-monospace,Consolas,monospace;font-size:12px;background:var(--card2);
+  border:1px solid var(--line);border-radius:4px;padding:1px 5px}
 
 /* 列表 */
 ul,ol{padding-left:22px;margin:10px 0}
@@ -236,7 +238,7 @@ li b{font-weight:600}
   <section class="sec" id="l2">
     <span class="lvl">L2 · 基础</span>
     <h2>机器是怎么「学」的<span class="diff">难度：基础 · 本节是全文的核心</span></h2>
-    <div class="pre"><b>前置：</b>L1「规则要学出来」。<span class="arrow">→</span> <b>本节引出：</b>参数、损失、梯度下降——理解这些，才看得懂感知机在改什么。</div>
+    <div class="pre"><b>前置：</b>L1「规则要学出来」。<span class="arrow">→</span> <b>本节引出：</b>数据准备、参数、损失、梯度下降，以及无监督学习这一支——理解这些，才看得懂后面每张可视化在算什么。</div>
 
     <p>任何一次「学习」，都可以拆成三个要素：</p>
     <ol>
@@ -249,6 +251,20 @@ li b{font-weight:600}
       <b>类比：</b>调淋浴水温。你不知道该拧多少，就先拧一下、手试温度、太冷往热拧、太热往冷拧。
       「手试温度」= 算损失；「往哪边拧、拧多少」= 梯度下降。
     </div>
+
+    <h3 style="font-size:16px;margin:22px 0 6px">⓪ 先看数据：直方图与范围筛选（第一个要素的动手页）</h3>
+    <p>
+      上面三要素里，「数据」排第一，因为它决定了后面一切。喂给模型之前，人们通常先问：
+      数值范围多大？有没有录错的极端值？是不是分成明显的两坨？最朴素的工具就是<b>直方图</b>——
+      把数值切成等宽的格子，数每格有几个样本，画成柱子。看清形状后，拖两条线定一个区间
+      <code>[下限, 上限]</code>，只保留落在里面的样本，就是<b>范围筛选</b>。
+    </p>
+    <p>
+      再进一步，可以让算法自己找该切在哪：<b>Otsu 方法</b>（1979）遍历所有切法，取「两组差别最大」
+      的那一刀。它本质上就是把样本按数值分成两类，和后面的聚类是同一种「找组」思路，只是发生在一维上。
+      要留意反面：为了让指标好看而删数据，会让训练集与真实场景不再相像（<b>分布偏移</b>）。
+    </p>
+    <div class="link"><span class="ico">🔗</span><div>动手看：<a href="histogram_visual.html">直方图与范围筛选</a>——拖下限看均值怎么变、改箱数看同一批数据如何「变形」、点 Otsu 看阈值如何自动落在双峰谷底。</div></div>
 
     <h3 style="font-size:16px;margin:22px 0 6px">① 参数 vs 超参数（最容易混的一对）</h3>
     <table class="tbl">
@@ -280,6 +296,18 @@ li b{font-weight:600}
       <tr><td><b>强化学习</b></td><td>无标签，但有「奖励」</td><td>下棋、机器人控制、玩游戏</td></tr>
     </table>
     <p class="muted">本系列的感知机属于<b>监督学习</b>：每个样本都附了标准答案（0 或 1），模型靠「对答案」来改。</p>
+    <p>
+      另一支是<b>无监督学习</b>：完全没有答案，只能按「谁跟谁像」自己找结构，代表任务就是<b>聚类</b>。
+      最经典的 <b>K-Means</b> 只重复两个动作：每个点归到最近的<b>质心</b>，再把质心移到本簇的平均值；
+      反复交替直到不再移动。它和感知机一样是「反复改参数直到稳定」，但差别很关键——
+      <b>感知机有答案可以对，聚类没有</b>，连「分几堆（K）」都要人先定。
+    </p>
+    <p class="muted">
+      也正因为只用「距离远近」，K-Means 默认簇是圆滚滚的：遇到环形、月牙这类弯曲形状就会切错，
+      这时需要按密度找簇的 DBSCAN 等方法。这个局限和感知机解不了 XOR 是同一类教训：
+      <b>每个算法都带着自己的假设</b>。
+    </p>
+    <div class="link"><span class="ico">🔗</span><div>动手看：<a href="cluster_visual.html">聚类算法 K-Means</a>——单步观察「分配 → 更新」交替、用肘部法看 K 怎么选、切到圆环/双月牙看它失效。</div></div>
 
     <h3 style="font-size:16px;margin:22px 0 6px">④ 泛化与过拟合：学「会」还是学「死」</h3>
     <p>
@@ -502,8 +530,16 @@ li b{font-weight:600}
         <div class="dot">7</div>
         <div class="body"><b>历史验证：三浪潮两寒冬，靠数据·算力·算法</b><span>每次突破都建立在前一步的方法之上。</span><em>→ 对应本文 L5</em></div>
       </div>
+      <div class="step">
+        <div class="dot">A</div>
+        <div class="body"><b>支线一：训练前先看清数据</b><span>直方图 → 范围筛选 → Otsu 自动阈值；一维上看分布、定规则。</span><em>→ 对应 直方图与范围筛选 / 本文 L2 ⓪</em></div>
+      </div>
+      <div class="step">
+        <div class="dot">B</div>
+        <div class="body"><b>支线二：没有答案时怎么找结构</b><span>无监督学习 → K-Means 质心迭代 → 肘部法选 K → 非凸形状失效。</span><em>→ 对应 聚类可视化 / 本文 L2 ③</em></div>
+      </div>
     </div>
-    <p class="muted">按这个顺序点开三张可视化，你会发现：第 3 步是「一个神经元」，第 5 步是「让词互相打分」——它们原理不同，但共同点只有一个，却最关键：<b>规则由数据学出，而非人写死。</b></p>
+    <p class="muted">两条支线都挂在 L2：A 处理第一个要素「数据」，B 展开第三种学习方式「无监督」。按主线点开五张可视化，你会发现：有的是「一个神经元」，有的是「让词互相打分」，还有的是「让点自己找同伴」——原理各不相同，但共同点只有一个，却最关键：<b>规则由数据学出，而非人写死。</b></p>
   </section>
 
   <!-- L7 误区 -->
@@ -516,9 +552,13 @@ li b{font-weight:600}
     <div class="myth"><div class="m">误区 3：训练集准确率高 = 模型好</div><div class="r">恰恰相反，<b>训练集满分而测试集崩，就是过拟合</b>。真正看的是在新数据上的<b>泛化</b>能力。</div></div>
     <div class="myth"><div class="m">误区 4：AI 真的「理解」了</div><div class="r">今天的模型擅长<b>从数据中找规律</b>，但并不能像人一样真正「理解」意义。对它的输出要保持判断，尤其别把它当绝对真理。</div></div>
     <div class="myth"><div class="m">误区 5：注意力权重 = 因果解释</div><div class="r">不能。<b>权重只是「注意力预算怎么分」</b>，不是「这个词有多重要」的绝对分数，更不是因果推理。</div></div>
+    <div class="myth"><div class="m">误区 6：聚类分出的堆就是「真实类别」</div><div class="r">不一定。聚类只按你选的<b>距离度量</b>和 <b>K</b> 分组，换一种度量、换一个 K，分组就变。堆的含义要人事后结合业务解释，它不是标准答案。</div></div>
+    <div class="myth"><div class="m">误区 7：筛掉「不好看」的数据能提升模型</div><div class="r">风险很大。为指标好看而删样本会造成<b>分布偏移</b>，模型上线遇到被删的情况就失灵。筛选只能基于明确的数据质量问题，并要检查被筛掉的部分。</div></div>
 
     <h3 style="font-size:16px;margin:24px 0 8px">下一步：按顺序动手</h3>
     <ol>
+      <li><b>直方图与范围筛选</b>（支线 A）：拖下限看均值变化，切双峰数据点 Otsu。</li>
+      <li><b>聚类可视化</b>（支线 B）：单步看质心移动，玩肘部法，再切圆环看它失效。</li>
       <li><b>感知机可视化</b>：自动播放看红线怎么移动、柱子怎么降到 0；再切 XOR 看它学不会。</li>
       <li><b>自注意力可视化</b>：只看颜色深浅与弧线粗细，切 Head1/Head2、开因果掩码、勾随机权重。</li>
       <li><b>参数图鉴</b>：按名词查，玩「学习率」与「温度」两个实验。</li>

@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>聚类算法：没有标准答案，怎么自动分组</title>
+<style>
+:root{
+  --bg:#0f141b; --card:#171e28; --card2:#1d2632; --line:#2b3746;
+  --tx:#e6edf5; --tx2:#a8b8c9; --tx3:#77899d;
+  --pos:#5aa9ff; --neg:#e0a84e; --bound:#f07373; --ok:#4ec9a0;
+}
+body[data-theme="light"]{
+  --bg:#f5f8fc; --card:#ffffff; --card2:#f4f8fd; --line:#dce6f2;
+  --tx:#1a2532; --tx2:#546577; --tx3:#7c8b9c;
+  --pos:#185fa5; --neg:#ba7517; --bound:#a32d2d; --ok:#1d9e75;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--tx);
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;
+  line-height:1.6;-webkit-font-smoothing:antialiased}
+.wrap{max-width:1080px;margin:0 auto;padding:30px 22px 64px}
+header{display:flex;align-items:flex-start;justify-content:space-between;gap:16px}
+h1{font-size:24px;font-weight:600;margin:0 0 5px}
+.sub{color:var(--tx2);font-size:13px;margin:0}
+.hbtns{display:flex;gap:8px;flex:none}
+.hbtns button,.hbtns a{cursor:pointer;border:1px solid var(--line);background:var(--card);color:var(--tx2);
+  border-radius:9px;padding:7px 12px;font-size:12px;text-decoration:none}
+.hbtns button:hover,.hbtns a:hover{color:var(--tx);border-color:var(--pos)}
+.guide{background:var(--card);border:1px solid #b5d4f4;border-radius:12px;margin:20px 0 16px;overflow:hidden}
+.guide>summary{list-style:none;cursor:pointer;padding:11px 16px;background:#e6f1fb;display:flex;
+  align-items:center;justify-content:space-between;gap:10px}
+.guide>summary::-webkit-details-marker{display:none}
+.guide>summary b{font-size:13px;font-weight:500;color:var(--pos)}
+.guide>summary span{font-size:11px;color:var(--tx2)}
+.guide-body{padding:14px 16px 16px;display:grid;grid-template-columns:1fr 1fr;gap:10px 22px}
+.guide h3{font-size:12px;font-weight:500;margin:12px 0 5px}
+.guide h3:first-child{margin-top:0}
+.guide p,.guide li{font-size:12px;color:var(--tx2);line-height:1.8;margin:0 0 4px}
+.guide ol,.guide ul{padding-left:18px;margin:0}
+.guide b{color:var(--tx);font-weight:500}
+.lead{font-size:13px;line-height:1.85;color:var(--tx);background:#f4f8fd;border-left:3px solid var(--pos);
+  padding:9px 12px;border-radius:0 6px 6px 0;margin:0 0 10px}
+.term{display:grid;grid-template-columns:92px 1fr;gap:3px 10px;font-size:12px;line-height:1.7}
+.term dt{color:var(--pos);font-family:ui-monospace,Consolas,monospace}
+.term dd{margin:0;color:var(--tx2)}
+.controls{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 14px;
+  display:flex;flex-wrap:wrap;gap:12px 20px;align-items:center;margin-bottom:14px}
+.cgroup{display:flex;align-items:center;gap:7px;flex-wrap:wrap}
+.cgroup>label{font-size:11px;color:var(--tx3);white-space:nowrap}
+button{font-family:inherit;cursor:pointer;border:1px solid var(--line);background:var(--card2);
+  color:var(--tx2);border-radius:7px;padding:5px 10px;font-size:12px;transition:.15s}
+button:hover{border-color:var(--pos);color:var(--tx)}
+button.on{background:var(--pos);border-color:var(--pos);color:#fff}
+button.primary{background:var(--ok);border-color:var(--ok);color:#06251c;font-weight:600}
+input[type=range]{accent-color:var(--pos);vertical-align:middle}
+.layout{display:grid;grid-template-columns:1.15fr .85fr;gap:14px}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:13px 15px}
+.panel h2{font-size:13px;font-weight:600;margin:0 0 9px}
+.mini{font-size:11px;color:var(--tx3);font-weight:400;margin-left:8px}
+canvas{display:block;width:100%;height:auto;background:var(--card2);border-radius:8px}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:4px 10px;font-size:12px;margin-top:10px}
+.kv dt{color:var(--tx3)}
+.kv dd{margin:0;font-family:ui-monospace,Consolas,monospace;color:var(--tx)}
+.log{margin-top:9px;max-height:150px;overflow-y:auto;font-size:11px;line-height:1.8;
+  font-family:ui-monospace,Consolas,monospace;color:var(--tx2);background:var(--card2);
+  border-radius:8px;padding:9px 11px;white-space:pre-wrap}
+.qa{margin-top:16px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 16px}
+.qa h2{font-size:13px;font-weight:600;margin:0 0 8px}
+.qa p{font-size:12px;color:var(--tx2);margin:0 0 7px;line-height:1.75}
+.qa p:last-child{margin-bottom:0}
+.qa b{color:var(--tx);font-weight:500}
+.footnav{display:flex;justify-content:space-between;gap:10px;margin-top:22px}
+.footnav a{font-size:12px;color:var(--pos);text-decoration:none;border:1px solid var(--line);
+  border-radius:8px;padding:8px 13px}
+.footnav a:hover{border-color:var(--pos)}
+code{font-family:ui-monospace,Consolas,monospace;font-size:11px;background:var(--card2);
+  border:1px solid var(--line);border-radius:4px;padding:1px 5px}
+@media(max-width:900px){.layout,.guide-body{grid-template-columns:1fr}}
+</style>
+</head>
+<body data-theme="dark">
+<div class="wrap">
+  <header>
+    <div>
+      <h1>聚类算法：没有标准答案，怎么自动分组</h1>
+      <p class="sub">K-Means 交互可视化 · 无监督学习的代表算法</p>
+    </div>
+    <div class="hbtns">
+      <a href="index.html">首页</a>
+      <button id="themeBtn">切换浅色</button>
+    </div>
+  </header>
+
+  <details class="guide" open>
+    <summary><b>先看这里 · 零基础导读</b><span>点击可收起 / 展开</span></summary>
+    <div class="guide-body">
+      <div>
+        <h3>先记住这一句</h3>
+        <p class="lead">桌上混着一堆水果，<b>没人告诉你哪个是苹果、哪个是橘子</b>，你只能按「长得像不像」把它们分成几堆——这就是聚类。它不像感知机那样有标准答案可以对，只能自己从数据里找结构。</p>
+        <h3>这张图怎么看</h3>
+        <ul>
+          <li>小圆点是数据，<b>颜色代表它被分到哪一簇</b>（一开始全是灰的）。</li>
+          <li>带数字的大十字是<b>质心</b>，也就是每一簇的「中心代表」。</li>
+          <li>算法只重复两个动作：<b>① 每个点找最近的中心 ② 中心移到本簇的平均值</b>。</li>
+          <li>右下柱状图是 <b>inertia</b>（所有点到自己中心的距离平方和），它只会下降；不再动就是收敛。</li>
+        </ul>
+        <h3>建议按这个顺序点一遍</h3>
+        <ol>
+          <li>默认「三团」，点几次<b>单步</b>：看「分配 → 更新」如何交替，中心一步步挪到三团正中。</li>
+          <li>点「重置」再「自动播放」，对照 inertia 柱子怎样降下来并停住。</li>
+          <li>把 <b>K 改成 2 或 4</b>，看同一批点被强行分成不同数量。</li>
+          <li>点「肘部法」：K=1→3 下降很陡，K=3 之后变缓，<b>拐点提示 K=3 比较合适</b>。</li>
+          <li>切到<b>圆环</b>或<b>双月牙</b>：点会明显被切错——这就是 K-Means 的能力边界。</li>
+          <li>把初始化换成「顺序取前 K 个」，看结果变差：<b>起点不同，结局可能不同</b>。</li>
+        </ol>
+      </div>
+      <div>
+        <h3>术语白话对照</h3>
+        <dl class="term">
+          <dt>无监督学习</dt><dd>数据<b>没有标准答案</b>，只能自己找规律。聚类和降维都属此类。</dd>
+          <dt>簇 cluster</dt><dd>分出来的「一堆」，堆内相似、堆间不同。</dd>
+          <dt>质心 centroid</dt><dd>一簇所有点的平均位置，相当于这堆的「代表」。</dd>
+          <dt>K</dt><dd>你<b>事先指定</b>要分几堆，属于超参数。</dd>
+          <dt>欧氏距离</dt><dd>两点之间的直线距离，用来判断「谁离谁近」。</dd>
+          <dt>分配 / 更新</dt><dd>先给每个点找最近中心，再把中心挪到均值；两者反复交替。</dd>
+          <dt>inertia</dt><dd>「大家离自己的中心有多散」，越小说明簇越紧凑。</dd>
+          <dt>收敛</dt><dd>中心几乎不再移动，可以停了。</dd>
+          <dt>局部最优</dt><dd>起点不好时，卡在一个「还行但不是最好」的分法里。</dd>
+          <dt>肘部法</dt><dd>把不同 K 的 inertia 画出来，找曲线变缓的那个拐点。</dd>
+          <dt>非凸簇</dt><dd>环形、月牙这类弯的形状，K-Means 只会切圆形，切不好。</dd>
+          <dt>DBSCAN</dt><dd>按「密度」找簇的算法，能处理弯的形状，也能标记噪声点。</dd>
+        </dl>
+        <h3>和感知机差在哪</h3>
+        <p>感知机是<b>监督学习</b>：每道题都附答案，靠「猜错就改」。K-Means 是<b>无监督学习</b>：没有答案，靠「谁离谁近」自己分堆。共同点是都在<b>反复改参数直到稳定</b>。</p>
+        <h3>历史小注</h3>
+        <p>「k-means」这个名称由 James MacQueen 于 1967 年提出；类似的交替迭代思想更早由 Lloyd（1957，1982 正式发表）等人独立提出。2007 年 Arthur 与 Vassilvitskii 提出 <b>k-means++</b> 改善初始化；1996 年的 <b>DBSCAN</b> 则专门解决非凸形状。</p>
+      </div>
+    </div>
+  </details>
+
+  <div class="controls">
+    <div class="cgroup"><label>数据</label>
+      <button data-kind="blobs" class="on">三团</button>
+      <button data-kind="ring">圆环</button>
+      <button data-kind="moons">双月牙</button>
+    </div>
+    <div class="cgroup"><label>K =</label>
+      <button data-k="2">2</button><button data-k="3" class="on">3</button>
+      <button data-k="4">4</button><button data-k="5">5</button>
+    </div>
+    <div class="cgroup"><label>初始化</label>
+      <button data-init="farthest" class="on">最远点（近似 k-means++）</button>
+      <button data-init="first">顺序取前 K 个</button>
+      <button data-init="random">随机（固定种子）</button>
+    </div>
+    <div class="cgroup"><label>速度</label>
+      <input type="range" id="speed" min="60" max="600" step="20" value="260">
+      <span id="speedV" style="font-size:11px;color:var(--tx3)">260ms</span>
+    </div>
+    <div class="cgroup">
+      <button id="step" class="primary">单步</button>
+      <button id="play">自动播放</button>
+      <button id="finish">跑完</button>
+      <button id="reset">重置</button>
+      <button id="elbowBtn">肘部法</button>
+    </div>
+  </div>
+
+  <div class="layout">
+    <div class="panel">
+      <h2>聚类平面<span class="mini">点按簇着色 · 大十字是质心</span></h2>
+      <canvas id="plane" width="520" height="420"></canvas>
+      <dl class="kv">
+        <dt>当前阶段</dt><dd id="phaseV">未开始</dd>
+        <dt>轮数 / inertia</dt><dd id="stateV">—</dd>
+        <dt>每簇点数</dt><dd id="countsV">—</dd>
+        <dt>质心坐标</dt><dd id="centersV">—</dd>
+      </dl>
+    </div>
+    <div>
+      <div class="panel">
+        <h2>inertia 变化<span class="mini">只会下降，停住就是收敛</span></h2>
+        <canvas id="bars" width="380" height="190"></canvas>
+      </div>
+      <div class="panel" style="margin-top:14px">
+        <h2>肘部法：不同 K 的最终 inertia<span class="mini">点上方按钮扫描 K=1..6</span></h2>
+        <canvas id="elbow" width="380" height="170"></canvas>
+      </div>
+      <div class="panel" style="margin-top:14px">
+        <h2>运行日志<span class="mini">分配与更新交替进行</span></h2>
+        <div class="log" id="log">点「单步」开始。</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="qa">
+    <h2>常见疑问</h2>
+    <p><b>Q：K 到底该定几？</b><br>没有标准答案，因为聚类本来就没有标签。常用<b>肘部法</b>看 inertia 下降变缓的位置（本页三团数据在 K=3 有明显拐点），也可用轮廓系数；业务上还要看「分几堆才方便解释和行动」。</p>
+    <p><b>Q：聚类和分类是不是一回事？</b><br>不是。<b>分类</b>有标准答案（这张图是不是猫），训练时会对答案；<b>聚类</b>没有答案，只按相似度分堆，堆的「名字」要人事后贴。</p>
+    <p><b>Q：为什么圆环和双月牙切错了？</b><br>K-Means 隐含假设「簇是圆滚滚、大小相近的」，它用直线中点划分地盘。环形、月牙是<b>非凸形状</b>，需要按密度找簇的 DBSCAN 或谱聚类等方法。</p>
+    <p><b>Q：换一个初始化，结果为什么变了？</b><br>算法只保证「不再改进就停」，不保证全局最好。起点不好会掉进<b>局部最优</b>；k-means++ 让初始中心尽量散开，就是为缓解这点。真实项目通常跑多次取 inertia 最小的结果。</p>
+    <p><b>Q：用之前要做数据准备吗？</b><br>要。欧氏距离对量纲很敏感：身高（cm）和收入（元）放一起，数值大的那一维会主导结果，所以通常先<b>标准化</b>。另外异常值会把质心拉偏——怎么看清并筛掉它们，正是上一站 <a href="histogram_visual.html" style="color:var(--pos)">直方图与范围筛选</a> 讲的内容。</p>
+  </div>
+
+  <div class="footnav">
+    <a href="histogram_visual.html">← 上一站：直方图与范围筛选</a>
+    <a href="ai_basics.html">返回知识地图 L2 →</a>
+  </div>
+</div>
+
+<script>
+/* ---------- 纯计算层：与 cluster.py 使用同一份数据与公式 ---------- */
+var KINDS = ["blobs", "ring", "moons"];
+var COLORS = ["#5aa9ff", "#e0a84e", "#4ec9a0", "#c58af9", "#f07373"];
+
+function makePoints(kind) {
+  var pts = [], i, a, r, cx, cy, ci;
+  if (kind === "blobs") {
+    var centers = [[2.3, 2.6], [7.6, 2.9], [5.0, 7.6]];
+    for (ci = 0; ci < 3; ci++) {
+      cx = centers[ci][0]; cy = centers[ci][1];
+      for (i = 0; i < 20; i++) {
+        a = 2 * Math.PI * i / 20 + ci * 0.7;
+        r = 0.55 + 0.55 * (i % 5) / 4;
+        pts.push([cx + r * Math.cos(a) + 0.12 * Math.sin(i * 1.7 + ci),
+                  cy + r * Math.sin(a) + 0.12 * Math.cos(i * 2.1 + ci)]);
+      }
+    }
+  } else if (kind === "ring") {
+    for (i = 0; i < 34; i++) {
+      a = 2 * Math.PI * i / 34;
+      r = 3.2 + 0.18 * Math.sin(i * 1.3);
+      pts.push([5 + r * Math.cos(a), 5 + r * Math.sin(a)]);
+    }
+    for (i = 0; i < 20; i++) {
+      a = 2 * Math.PI * i / 20;
+      r = 0.9 + 0.2 * Math.cos(i * 2.2);
+      pts.push([5 + r * Math.cos(a), 5 + r * Math.sin(a)]);
+    }
+  } else {
+    for (i = 0; i < 26; i++) {
+      a = Math.PI * i / 25;
+      pts.push([2.0 + 5.0 * a / Math.PI + 0.25 * Math.sin(i * 1.9),
+                3.2 + 2.2 * Math.sin(a) + 0.2 * Math.cos(i * 1.3)]);
+    }
+    for (i = 0; i < 26; i++) {
+      a = Math.PI * i / 25;
+      pts.push([8.0 - 5.0 * a / Math.PI + 0.25 * Math.sin(i * 2.3),
+                6.4 - 2.2 * Math.sin(a) + 0.2 * Math.cos(i * 1.7)]);
+    }
+  }
+  return pts;
+}
+
+function dist2(a, b) { var dx = a[0] - b[0], dy = a[1] - b[1]; return dx * dx + dy * dy; }
+
+function initCenters(points, k, mode) {
+  var n = points.length, out = [], i, j, idx, seed, best_i, best_d, d;
+  if (mode === "first") {
+    for (i = 0; i < k; i++) out.push(points[i].slice());
+    return out;
+  }
+  if (mode === "random") {
+    idx = []; for (i = 0; i < n; i++) idx.push(i);
+    seed = 20261111;
+    for (i = n - 1; i > 0; i--) {
+      seed = (Math.imul(seed, 1103515245) + 12345) & 0x7fffffff;
+      j = seed % (i + 1);
+      var tmp = idx[i]; idx[i] = idx[j]; idx[j] = tmp;
+    }
+    for (i = 0; i < k; i++) out.push(points[idx[i]].slice());
+    return out;
+  }
+  out.push(points[0].slice());
+  while (out.length < k) {
+    best_i = 0; best_d = -1;
+    for (i = 0; i < n; i++) {
+      d = Infinity;
+      for (j = 0; j < out.length; j++) d = Math.min(d, dist2(points[i], out[j]));
+      if (d > best_d) { best_d = d; best_i = i; }
+    }
+    out.push(points[best_i].slice());
+  }
+  return out;
+}
+
+function assign(points, centers) {
+  var labels = [], i, j, best_j, best_d, d;
+  for (i = 0; i < points.length; i++) {
+    best_j = 0; best_d = Infinity;
+    for (j = 0; j < centers.length; j++) {
+      d = dist2(points[i], centers[j]);
+      if (d < best_d) { best_d = d; best_j = j; }
+    }
+    labels.push(best_j);
+  }
+  return labels;
+}
+
+function inertiaOf(points, labels, centers) {
+  var s = 0;
+  for (var i = 0; i < points.length; i++) s += dist2(points[i], centers[labels[i]]);
+  return s;
+}
+
+function updateCenters(points, labels, centers) {
+  var k = centers.length, sx = [], sy = [], cnt = [], i, lab, out = [];
+  for (i = 0; i < k; i++) { sx.push(0); sy.push(0); cnt.push(0); }
+  for (i = 0; i < points.length; i++) {
+    lab = labels[i]; sx[lab] += points[i][0]; sy[lab] += points[i][1]; cnt[lab]++;
+  }
+  for (i = 0; i < k; i++) {
+    out.push(cnt[i] ? [sx[i] / cnt[i], sy[i] / cnt[i]] : centers[i].slice());
+  }
+  return { centers: out, counts: cnt };
+}
+
+/* 一次性跑完（等价于 cluster.py 的 kmeans），也供 Node 交叉校验 */
+function runAll(points, k, mode, maxIter) {
+  maxIter = maxIter || 60;
+  var centers = initCenters(points, k, mode), labels = assign(points, centers);
+  var history = [], it, cur, up, moved, j;
+  for (it = 1; it <= maxIter; it++) {
+    cur = inertiaOf(points, labels, centers);
+    up = updateCenters(points, labels, centers);
+    moved = 0;
+    for (j = 0; j < k; j++) moved = Math.max(moved, Math.sqrt(dist2(centers[j], up.centers[j])));
+    centers = up.centers;
+    history.push({ iter: it, inertia: cur, moved: moved, counts: up.counts });
+    if (moved < 1e-9) break;
+    labels = assign(points, centers);
+  }
+  return { centers: centers, labels: labels, history: history,
+           inertia: history[history.length - 1].inertia,
+           converged: history[history.length - 1].moved < 1e-9 };
+}
+
+function elbowScan(points, mode) {
+  var out = [], k;
+  for (k = 1; k <= 6; k++) out.push({ k: k, inertia: runAll(points, k, mode).inertia });
+  return out;
+}
+
+/* ---------- 状态与渲染 ---------- */
+var s = {
+  kind: "blobs", k: 3, init: "farthest", points: [], centers: [], labels: [],
+  phase: 0, history: [], iter: 0, done: false, playing: false, timer: 0,
+  elbow: null, log: [], speed: 260
+};
+var $ = function (id) { return document.getElementById(id); };
+
+function logLine(t) { s.log.push(t); if (s.log.length > 80) s.log.shift(); }
+
+function reset() {
+  stop();
+  s.points = makePoints(s.kind);
+  s.centers = initCenters(s.points, s.k, s.init);
+  s.labels = []; s.phase = 0; s.history = []; s.iter = 0; s.done = false;
+  s.log = ["数据 " + s.kind + "，共 " + s.points.length + " 点；K=" + s.k + "，初始化=" + s.init];
+  logLine("初始质心：" + s.centers.map(function (c) {
+    return "[" + c[0].toFixed(2) + "," + c[1].toFixed(2) + "]"; }).join(" "));
+  render();
+}
+
+function step() {
+  if (s.done) return false;
+  if (s.phase === 0) {
+    s.labels = assign(s.points, s.centers);
+    var cnt = [], i;
+    for (i = 0; i < s.k; i++) cnt.push(0);
+    for (i = 0; i < s.labels.length; i++) cnt[s.labels[i]]++;
+    logLine("第 " + (s.iter + 1) + " 轮 · 分配：每簇 " + cnt.join("/") + " 个点");
+    s.phase = 1;
+  } else {
+    var cur = inertiaOf(s.points, s.labels, s.centers);
+    var up = updateCenters(s.points, s.labels, s.centers);
+    var moved = 0, j;
+    for (j = 0; j < s.k; j++)
+      moved = Math.max(moved, Math.sqrt(dist2(s.centers[j], up.centers[j])));
+    s.centers = up.centers;
+    s.iter++;
+    s.history.push({ iter: s.iter, inertia: cur, moved: moved, counts: up.counts });
+    logLine("第 " + s.iter + " 轮 · 更新：质心移动 " + moved.toFixed(4) +
+            "，inertia=" + cur.toFixed(2));
+    s.phase = 0;
+    if (moved < 1e-9) { s.done = true; logLine("收敛：质心不再移动，停止。"); stop(); }
+  }
+  render();
+  return true;
+}
+
+function stop() {
+  s.playing = false;
+  if (s.timer) { clearInterval(s.timer); s.timer = 0; }
+  var b = $("play"); if (b) b.textContent = "自动播放";
+}
+
+function play() {
+  if (s.done) reset();
+  if (s.playing) { stop(); return; }
+  s.playing = true;
+  $("play").textContent = "暂停";
+  var self = s;
+  s.timer = setInterval(function () { if (!step()) stop(); }, self.speed);
+}
+
+function finish() {
+  stop();
+  var guard = 0;
+  while (!s.done && guard++ < 200) step();
+  render();
+}
+
+var FALLBACK = { "--line": "#2b3746", "--tx": "#e6edf5", "--tx2": "#a8b8c9",
+  "--tx3": "#77899d", "--pos": "#5aa9ff", "--ok": "#4ec9a0" };
+function css(v) {
+  try {
+    var x = getComputedStyle(document.body).getPropertyValue(v);
+    return (x && x.trim()) || FALLBACK[v] || "#888";
+  } catch (e) { return FALLBACK[v] || "#888"; }
+}
+
+function drawPlane() {
+  var cv = $("plane"), ctx = cv.getContext("2d"), W = cv.width, H = cv.height;
+  ctx.clearRect(0, 0, W, H);
+  var pad = 26, size = Math.min(W, H) - pad * 2;
+  var X = function (v) { return pad + v / 10 * size; };
+  var Y = function (v) { return H - pad - v / 10 * size; };
+  ctx.strokeStyle = css("--line"); ctx.lineWidth = 1;
+  for (var g = 0; g <= 10; g += 2) {
+    ctx.beginPath(); ctx.moveTo(X(g), Y(0)); ctx.lineTo(X(g), Y(10)); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(X(0), Y(g)); ctx.lineTo(X(10), Y(g)); ctx.stroke();
+  }
+  var i, p, lab;
+  for (i = 0; i < s.points.length; i++) {
+    p = s.points[i];
+    lab = s.labels.length ? s.labels[i] : -1;
+    ctx.beginPath(); ctx.arc(X(p[0]), Y(p[1]), 4.2, 0, Math.PI * 2);
+    ctx.fillStyle = lab < 0 ? css("--tx3") : COLORS[lab % COLORS.length];
+    ctx.fill();
+  }
+  for (i = 0; i < s.centers.length; i++) {
+    var c = s.centers[i], x = X(c[0]), y = Y(c[1]);
+    ctx.strokeStyle = COLORS[i % COLORS.length]; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(x - 11, y); ctx.lineTo(x + 11, y);
+    ctx.moveTo(x, y - 11); ctx.lineTo(x, y + 11); ctx.stroke();
+    ctx.beginPath(); ctx.arc(x, y, 7, 0, Math.PI * 2); ctx.stroke();
+    ctx.fillStyle = css("--tx"); ctx.font = "11px monospace";
+    ctx.fillText(String(i + 1), x + 11, y - 9);
+  }
+}
+
+function drawBars(canvasId, values, labels, title) {
+  var cv = $(canvasId), ctx = cv.getContext("2d"), W = cv.width, H = cv.height;
+  ctx.clearRect(0, 0, W, H);
+  var max = Math.max.apply(null, values.concat([1])), n = values.length;
+  var pad = 30, bw = (W - pad * 2) / n;
+  for (var i = 0; i < n; i++) {
+    var h = (H - pad * 2) * values[i] / max;
+    ctx.fillStyle = i === n - 1 ? css("--ok") : css("--pos");
+    ctx.fillRect(pad + i * bw + bw * 0.18, H - pad - h, bw * 0.64, h);
+    ctx.fillStyle = css("--tx3"); ctx.font = "10px monospace";
+    ctx.fillText(labels ? labels[i] : String(i + 1), pad + i * bw + bw * 0.2, H - pad + 13);
+    ctx.fillText(Math.round(values[i]), pad + i * bw + bw * 0.12, H - pad - h - 4);
+  }
+  ctx.fillStyle = css("--tx2"); ctx.font = "11px sans-serif";
+  if (title) ctx.fillText(title, pad, 16);
+}
+
+function render() {
+  drawPlane();
+  var vals = s.history.map(function (h) { return h.inertia; });
+  drawBars("bars", vals.length ? vals : [0], null, vals.length ? "inertia（每轮）" : "尚无数据");
+  if (s.elbow) {
+    drawBars("elbow", s.elbow.map(function (e) { return e.inertia; }),
+             s.elbow.map(function (e) { return "K=" + e.k; }), "K 越大 inertia 越小，看哪里变缓");
+  } else {
+    var cv = $("elbow"), ctx = cv.getContext("2d");
+    ctx.clearRect(0, 0, cv.width, cv.height);
+    ctx.fillStyle = css("--tx3"); ctx.font = "12px sans-serif";
+    ctx.fillText("点上方「肘部法」扫描 K=1..6", 24, cv.height / 2);
+  }
+  $("phaseV").textContent = s.done ? "已收敛" : (s.phase === 0 ? "待分配" : "待更新");
+  var last = s.history[s.history.length - 1];
+  $("stateV").textContent = last ? (s.iter + " 轮 / " + last.inertia.toFixed(2)) : "—";
+  $("countsV").textContent = last ? last.counts.join(" / ") : "—";
+  $("centersV").textContent = s.centers.map(function (c) {
+    return "[" + c[0].toFixed(2) + "," + c[1].toFixed(2) + "]"; }).join(" ");
+  $("log").textContent = s.log.join("\n");
+};
+
+/* ---------- 事件 ---------- */
+function bindGroup(attr, key, cast) {
+  var nodes = document.querySelectorAll("button[" + attr + "]");
+  for (var i = 0; i < nodes.length; i++) {
+    nodes[i].addEventListener("click", function () {
+      var v = this.getAttribute(attr);
+      s[key] = cast ? cast(v) : v;
+      var all = document.querySelectorAll("button[" + attr + "]");
+      for (var j = 0; j < all.length; j++) all[j].classList.remove("on");
+      this.classList.add("on");
+      s.elbow = null;
+      reset();
+    });
+  }
+}
+bindGroup("data-kind", "kind", null);
+bindGroup("data-k", "k", Number);
+bindGroup("data-init", "init", null);
+
+$("step").addEventListener("click", function () { stop(); step(); });
+$("play").addEventListener("click", play);
+$("finish").addEventListener("click", finish);
+$("reset").addEventListener("click", reset);
+$("elbowBtn").addEventListener("click", function () {
+  s.elbow = elbowScan(s.points, s.init);
+  logLine("肘部法扫描完成：" + s.elbow.map(function (e) {
+    return "K" + e.k + "=" + e.inertia.toFixed(0); }).join("  "));
+  render();
+});
+$("speed").addEventListener("input", function () {
+  s.speed = Number(this.value);
+  $("speedV").textContent = this.value + "ms";
+  if (s.playing) { stop(); play(); }
+});
+$("themeBtn").addEventListener("click", function () {
+  var b = document.body, dark = b.getAttribute("data-theme") === "dark";
+  b.setAttribute("data-theme", dark ? "light" : "dark");
+  this.textContent = dark ? "切换深色" : "切换浅色";
+  render();
+});
+document.addEventListener("keydown", function (e) {
+  if (e.key === " " && e.target && e.target.tagName !== "INPUT") {
+    e.preventDefault(); stop(); step();
+  }
+});
+
+reset();
+</script>
+<script src="ai_helper.js"></script>
+</body>
+</html>

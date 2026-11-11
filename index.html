@@ -55,6 +55,9 @@ h1{font-size:26px;font-weight:600;margin:0 0 6px;letter-spacing:.3px}
 .note b{color:var(--tx2);font-weight:500}
 .kbd{font-family:ui-monospace,Consolas,monospace;background:var(--card2);
   border:1px solid var(--line);border-radius:4px;padding:1px 6px;font-size:11px}
+.sect{margin:30px 0 12px;font-size:13px;color:var(--tx2);font-weight:600;
+  border-left:3px solid var(--neg);padding-left:10px}
+.sect small{font-weight:400;color:var(--tx3);margin-left:8px}
 </style>
 </head>
 <body data-theme="dark">
@@ -69,7 +72,8 @@ h1{font-size:26px;font-weight:600;margin:0 0 6px;letter-spacing:.3px}
 
   <div class="lead">
     我们不堆公式，而是把<b>模型真正在算的东西画出来</b>：先用地形图弄清概念与 AI 发展脉络，
-    再亲手看参数如何一步步改动、注意力如何在词与词之间流动。四页按难度递进，建议<b>从上往下按顺序看</b>。
+    再亲手看参数如何一步步改动、注意力如何在词与词之间流动。
+    <b>主线四页按难度递进</b>；下方另有<b>两条支线专题</b>，挂在知识地图 L2 后面，可任选顺序。
     所有内容零依赖、可离线打开，点任意卡片进入。
   </div>
 
@@ -78,6 +82,10 @@ h1{font-size:26px;font-weight:600;margin:0 0 6px;letter-spacing:.3px}
     <span>第 2 步 · 一个神经元</span><span>→</span>
     <span>第 3 步 · 词与词互相打分</span><span>→</span>
     <span>第 4 步 · 读懂每个参数</span>
+  </div>
+  <div class="flow" style="margin-top:-6px">
+    <span>支线 A · 看清数据（直方图）</span><span>·</span>
+    <span>支线 B · 没有答案时找结构（聚类）</span>
   </div>
 
   <div class="cards">
@@ -131,7 +139,7 @@ h1{font-size:26px;font-weight:600;margin:0 0 6px;letter-spacing:.3px}
       <div class="ctitle">参数图鉴：前面所有参数逐一讲解</div>
       <div class="cdesc">
         把前两页出现过的 25 个参数（权重、学习率、温度、维度、头数…）
-        逐一白话拆解，附常见取值速查表与两个可动手的数值实验。
+        逐一白话拆解，附常见取值速查表与三个可动手的数值实验。
       </div>
       <div class="ctags">
         <span class="tag easy">难度：查阅为主</span>
@@ -142,11 +150,45 @@ h1{font-size:26px;font-weight:600;margin:0 0 6px;letter-spacing:.3px}
     </a>
   </div>
 
+  <div class="sect">支线专题<small>对应知识地图 L2：A 讲「数据」，B 讲「无监督学习」；两者都从 L2 出发，A 是 B 的数据准备</small></div>
+  <div class="cards">
+    <a class="card" href="histogram_visual.html">
+      <div class="cstep">STEP A / 数据准备</div>
+      <div class="ctitle">直方图与范围筛选：先看分布，再决定留哪些数据</div>
+      <div class="cdesc">
+        把数值切成箱子数一数，拖两条线定筛选区间，观察保留比例与均值变化；
+        改箱数看同一批数据如何「变形」，再点 Otsu 让算法自动把阈值落在双峰谷底。
+      </div>
+      <div class="ctags">
+        <span class="tag easy">难度：入门</span>
+        <span class="tag">交互：直方图 + 类间方差曲线</span>
+        <span class="tag">零基础导读</span>
+      </div>
+      <div class="clink">打开直方图页面</div>
+    </a>
+
+    <a class="card" href="cluster_visual.html">
+      <div class="cstep">STEP B / 无监督学习</div>
+      <div class="ctitle">聚类算法 K-Means：没有标准答案，怎么自动分组</div>
+      <div class="cdesc">
+        单步看「分配 → 更新」如何交替、质心怎样一步步挪到簇中心；
+        用肘部法看 K 怎么选，再切到圆环与双月牙，亲眼看到算法的能力边界。
+      </div>
+      <div class="ctags">
+        <span class="tag mid">难度：基础</span>
+        <span class="tag">交互：散点 + 质心 + inertia</span>
+        <span class="tag">零基础导读</span>
+      </div>
+      <div class="clink">打开聚类可视化</div>
+    </a>
+  </div>
+
   <div class="note">
-    <b>阅读建议：</b>第 1 页建立概念与历史脉络；第 2 页用「自动播放」看红线怎么移动、柱子怎么降到 0；
-    第 3 页只看颜色深浅与弧线粗细；看不懂名词时，回第 4 页按词条查。<br>
-    本系列演示数据为<b>手工设定</b>，用于呈现可解释的结构，并非真实训练所得；
-    第 4 页已逐项标注「本例」与「真实模型」的取值差异。
+    <b>阅读建议：</b>第 1 页建立概念与历史脉络；随后可先走两条支线（A 看清数据 → B 让算法找组），
+    再回主线：第 2 页用「自动播放」看红线怎么移动、柱子怎么降到 0；第 3 页只看颜色深浅与弧线粗细；
+    看不懂名词时，回第 4 页按词条查。<br>
+    本系列演示数据为<b>手工设定</b>（确定性公式生成，可复现），用于呈现可解释的结构，并非真实训练所得；
+    第 4 页已逐项标注「本例」与「真实模型」的取值差异，两个新页面另附纯 Python 标准库数值基准。
   </div>
 </div>
 
